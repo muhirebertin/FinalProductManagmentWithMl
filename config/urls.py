@@ -15,13 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from production.views import dashboard
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Route all employee-related URLs to the employees app
     path('employees/', include('employees.urls')),
-    # Route all production-related URLs to the production app
     path('production/', include('production.urls')),
+    path('', dashboard, name='dashboard'), # This maps the root URL to dashboard
 ]
