@@ -1,0 +1,25 @@
+<!-- employees/templates/employees/employee_confirm_delete.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">Confirm Deletion</h3>
+            </div>
+            <div class="card-body">
+                <p>Are you absolutely sure you want to remove the artisan <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <a href="{% url 'employees:employee_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
