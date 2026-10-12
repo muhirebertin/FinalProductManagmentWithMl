@@ -16,8 +16,12 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
+    # Route all employee-related URLs to the employees app
+    path('employees/', include('employees.urls')),
+    # Route all production-related URLs to the production app
+    path('production/', include('production.urls')),
 ]
