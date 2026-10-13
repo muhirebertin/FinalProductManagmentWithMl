@@ -3,7 +3,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 import datetime
 from employees.models import Employee, LeaveRequest
-from inventory.models import Product  # Import the Product model
+from inventory.models import Product
+
 
 
 class ProductionTask(models.Model):
@@ -89,8 +90,7 @@ class ProductionTask(models.Model):
                 'status': 'Target quantity reached! Please change the status to "Completed".'
             })
 
-        # 3. The Bill of Materials (BOM) Stock Check
-        # We only check this for NEW tasks (not self.pk) so we don't block saving updates later
+
         if not self.pk and self.product and self.target_quantity:
             for bom in self.product.bom_items.all():
                 required_qty = bom.quantity_per_unit * self.target_quantity
@@ -98,3 +98,49 @@ class ProductionTask(models.Model):
                     raise ValidationError({
                         'target_quantity': f'Not enough {bom.material.name} in stock! Need {required_qty} {bom.material.unit}, but only have {bom.material.quantity_in_stock}.'
                     })
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_target = self.target_quantity if self.pk else 0
+
+    def clean(self):
+        # 1. State machine Rules
+        if self.produced_quantity > self.target_quantity:
+            raise ValidationError({'produced_quantity': 'Produced quantity cannot exceed the target quantity.'})
+        if self.status == 'Pending' and self.produced_quantity > 0:
+            raise ValidationError({'status': 'A task with production progress must be marked as "In Progress".'})
+        if self.status == 'Completed' and self.produced_quantity != self.target_quantity:
+            raise ValidationError(
+                {'status': f'Cannot complete. Produced {self.produced_quantity} out of {self.target_quantity}.'})
+        if self.status == 'In Progress' and self.produced_quantity == self.target_quantity:
+            raise ValidationError({'status': 'Target quantity reached! Please change the status to "Completed".'})
+
+        if self.product:
+            new_target_added = self.target_quantity - self._original_target
+            if new_target_added > 0:
+                for bom in self.product.bom_items.all():
+                    materials_needed = bom.quantity_per_unit * new_target_added
+                    if materials_needed > bom.material.quantity_in_stock:
+                        raise ValidationError({
+                            'target_quantity': f"Insufficient stock for {bom.material.name}! Need {materials_needed} {bom.material.unit}, but only have {bom.material.quantity_in_stock}."
+                        })
+
+    def save(self, *args, **kwargs):
+        new_target_added = self.target_quantity - self._original_target
+
+        super().save(*args, **kwargs)
+        if new_target_added != 0 and self.product:
+            for bom in self.product.bom_items.all():
+                consumed = bom.quantity_per_unit * new_target_added
+                bom.material.quantity_in_stock -= consumed
+                bom.material.save()
+
+        self._original_target = self.target_quantity
+
+    def delete(self, *args, **kwargs):
+        if self.product:
+            for bom in self.product.bom_items.all():
+                refund = bom.quantity_per_unit * self.target_quantity
+                bom.material.quantity_in_stock += refund
+                bom.material.save()
+        super().delete(*args, **kwargs)

@@ -16,29 +16,92 @@
 <div class="wrapper">
 
     <!-- Top Navbar -->
+    <!-- Navbar -->
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+
+        <!-- LEFT NAVBAR LINKS -->
         <ul class="navbar-nav">
+            <!-- Hamburger Menu -->
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
+            <!-- Quick Home Link -->
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="/" class="nav-link">Home</a>
+            </li>
+            <!-- Quick Action Dropdown -->
+            <li class="nav-item dropdown">
+                <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle text-success font-weight-bold">
+                    <i class="fas fa-plus-circle"></i> Quick Add
+                </a>
+                <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
+                    <li><a href="{% url 'production:task_create' %}" class="dropdown-item">New Production Task</a></li>
+                    <li><a href="{% url 'inventory:product_create' %}" class="dropdown-item">New Product (BOM)</a></li>
+                    <li class="dropdown-divider"></li>
+                    <li><a href="{% url 'employees:employee_create' %}" class="dropdown-item">Register Artisan</a></li>
+                </ul>
+            </li>
         </ul>
+
+        <!-- RIGHT NAVBAR LINKS -->
         <ul class="navbar-nav ml-auto">
+
+            <!-- Notifications Bell -->
             <li class="nav-item dropdown">
                 <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="fas fa-user-circle"></i> {{ request.user.username }}
+                    <i class="far fa-bell"></i>
+                    <!-- A static badge for now. You can make this dynamic later! -->
+                    <span class="badge badge-warning navbar-badge">!</span>
                 </a>
-                <div class="dropdown-menu dropdown-menu-right">
-                    <!-- Since Django 5, logout requires a POST request for security -->
-                    <form action="{% url 'logout' %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="dropdown-item text-danger">
-                            <i class="fas fa-sign-out-alt mr-2"></i> Log Out
-                        </button>
-                    </form>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow">
+                    <span class="dropdown-item dropdown-header">System Alerts</span>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'production:task_list' %}" class="dropdown-item">
+                        <i class="fas fa-tasks mr-2 text-danger"></i> Check Overdue Tasks
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'inventory:material_list' %}" class="dropdown-item">
+                        <i class="fas fa-box-open mr-2 text-warning"></i> Check Low Stock
+                    </a>
                 </div>
+            </li>
+
+            <!-- User Profile Dropdown -->
+            <li class="nav-item dropdown user-menu">
+                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                    <i class="fas fa-user-circle fa-lg text-secondary"></i>
+                    <span class="d-none d-md-inline ml-1">{{ request.user.username|title }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow">
+                    <!-- User image and role -->
+                    <li class="user-header bg-dark">
+                        <i class="fas fa-user-circle fa-4x text-white mt-3"></i>
+                        <p>
+                            {{ request.user.username|title }}
+                            <small>
+                                {% if request.user.is_superuser %}
+                                    System Administrator
+                                {% elif request.user.is_staff %}
+                                    HR / Production Manager
+                                {% else %}
+                                    Artisan / Standard User
+                                {% endif %}
+                            </small>
+                        </p>
+                    </li>
+                    <!-- Menu Footer-->
+                    <li class="user-footer">
+                        <!-- Standard Django logout requires a POST request for security -->
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-default btn-flat float-right">Sign out</button>
+                        </form>
+                    </li>
+                </ul>
             </li>
         </ul>
     </nav>
+<!-- /.navbar -->
 
     <!-- Main Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
