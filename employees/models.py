@@ -1,6 +1,7 @@
 # employees/models.py
 from django.db import models
 from django.core.exceptions import ValidationError
+from datetime import date
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -16,6 +17,22 @@ class Employee(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='employees')
     hire_date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+
+    @property
+    def active_contract(self):
+        # Find the latest active contract
+        contract = self.contracts.filter(is_active=True).order_by('-start_date').first()
+        return contract.contract_type if contract else "No Contract"
+
+    @property
+    def is_on_leave(self):
+        # Check if the employee has an approved leave overlapping with today
+        today = date.today()
+        return self.leave_requests.filter(
+            status='Approved',
+            start_date__lte=today,
+            end_date__gte=today
+        ).exists()
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

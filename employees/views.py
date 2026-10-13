@@ -85,11 +85,12 @@ def contract_create(request, employee_id):
     employee = get_object_or_404(Employee, id=employee_id)
     if request.method == 'POST':
         form = ContractForm(request.POST)
+
+        # CRITICAL FIX: Attach the employee BEFORE validation runs
+        form.instance.employee = employee
+
         if form.is_valid():
-            # commit=False allows us to attach the employee before saving
-            contract = form.save(commit=False)
-            contract.employee = employee
-            contract.save()
+            form.save()
             return redirect('employees:employee_detail', pk=employee.id)
     else:
         form = ContractForm()
@@ -107,14 +108,16 @@ def leave_create(request, employee_id):
     employee = get_object_or_404(Employee, id=employee_id)
     if request.method == 'POST':
         form = LeaveRequestForm(request.POST)
+
+        # CRITICAL FIX: Attach the employee BEFORE validation runs
+        form.instance.employee = employee
+
         if form.is_valid():
-            leave = form.save(commit=False)
-            leave.employee = employee
-            # HR is logging this, so it defaults to Pending until they explicitly hit Approve
-            leave.save()
+            form.save()
             return redirect('employees:employee_detail', pk=employee.id)
     else:
-        form = LeaveRequestForm()
+        # Default to 'Pending' so the form looks correct on load
+        form = LeaveRequestForm(initial={'status': 'Pending'})
 
     return render(request, 'employees/hr_action_form.html', {
         'form': form,

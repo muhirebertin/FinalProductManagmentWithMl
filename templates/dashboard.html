@@ -79,15 +79,16 @@
 </div>
 
 <!-- Recent Tasks Table -->
-<div class="row mt-4">
-    <div class="col-12">
+<div class="row">
+    <!-- LEFT SIDE: Recent Tasks (8/12 width) -->
+    <div class="col-lg-8">
         <div class="card">
-            <div class="card-header border-transparent">
-                <h3 class="card-title">Recent Manufacturing Tasks</h3>
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><b>Recent Manufacturing Tasks</b></h3>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table m-0">
+                    <table class="table m-0 table-hover">
                         <thead>
                             <tr>
                                 <th>Task ID</th>
@@ -99,25 +100,21 @@
                         <tbody>
                             {% for task in recent_tasks %}
                             <tr>
-                                <td><a href="{% url 'production:task_detail' task.pk %}">TSK-{{ task.id }}</a></td>
+                                <td><a href="{% url 'production:task_detail' task.pk %}"><strong>TSK-{{ task.id }}</strong></a></td>
                                 <td>{{ task.title }}</td>
                                 <td>
                                     {% if task.status == 'Completed' %}
-                                        <span class="badge badge-success">{{ task.status }}</span>
+                                        <span class="badge badge-success">Completed</span>
                                     {% elif task.status == 'In Progress' %}
-                                        <span class="badge badge-info">{{ task.status }}</span>
+                                        <span class="badge badge-info">In Progress</span>
                                     {% else %}
-                                        <span class="badge badge-warning">{{ task.status }}</span>
+                                        <span class="badge badge-warning">Pending</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="sparkbar" data-color="#00a65a" data-height="20">{{ task.assigned_to|default:"Unassigned" }}</div>
-                                </td>
+                                <td>{{ task.assigned_to|default:"Unassigned" }}</td>
                             </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">No recent tasks found.</td>
-                            </tr>
+                            <tr><td colspan="4" class="text-center">No recent tasks found.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -128,6 +125,39 @@
                     <a href="{% url 'production:task_create' %}" class="btn btn-sm btn-info float-left">Create New Task</a>
                 {% endif %}
                 <a href="{% url 'production:task_list' %}" class="btn btn-sm btn-secondary float-right">View All Tasks</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Workload Radar (4/12 width) -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"> Active Workload</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="products-list product-list-in-card pl-2 pr-2">
+                    {% for artisan in top_artisans %}
+                    <li class="item">
+                        <div class="product-info ml-2">
+                            <a href="{% url 'employees:employee_detail' artisan.id %}" class="product-title text-dark">
+                                {{ artisan.first_name }} {{ artisan.last_name }}
+                                <span class="badge {% if artisan.active_tasks > 3 %}badge-danger{% elif artisan.active_tasks > 0 %}badge-warning{% else %}badge-success{% endif %} float-right">
+                                    {{ artisan.active_tasks }} Active
+                                </span>
+                            </a>
+                            <span class="product-description">
+                                {{ artisan.department.name }}
+                            </span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="item text-center text-muted py-3">No active assignments.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'employees:employee_list' %}" class="uppercase">View All Artisans</a>
             </div>
         </div>
     </div>
