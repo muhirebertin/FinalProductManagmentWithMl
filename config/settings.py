@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 # Our Custom Apps
     'employees',
     'production',
+    'inventory',
 ]
 
 MIDDLEWARE = [

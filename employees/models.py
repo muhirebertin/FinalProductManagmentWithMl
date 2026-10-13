@@ -1,5 +1,6 @@
 # employees/models.py
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -39,6 +40,21 @@ class Contract(models.Model):
     def __str__(self):
         return f"{self.employee} - {self.contract_type} Contract"
 
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValidationError({'end_date': 'End date cannot be earlier than the start date.'})
+
+        if self.contract_type == 'Permanent' and self.end_date:
+            raise ValidationError({'end_date': 'Permanent contracts must not have an end date.'})
+
+        if self.contract_type != 'Permanent' and not self.end_date:
+            raise ValidationError({'end_date': f'{self.contract_type} contracts must have an end date.'})
+
+        if self.base_salary and self.base_salary <= 0:
+            raise ValidationError({'base_salary': 'Base salary must be greater than zero RWF.'})
+
 
 class LeaveRequest(models.Model):
     LEAVE_TYPES = [
@@ -63,3 +79,20 @@ class LeaveRequest(models.Model):
 
     def __str__(self):
         return f"{self.employee} ({self.get_leave_type_display()})"
+
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValidationError({'end_date': 'End date cannot be earlier than the start date.'})
+
+            # Prevent overlapping approved leaves for the same artisan
+            overlapping_leaves = LeaveRequest.objects.filter(
+                employee=self.employee,
+                status='Approved',
+                start_date__lte=self.end_date,
+                end_date__gte=self.start_date
+            ).exclude(pk=self.pk)
+
+            if overlapping_leaves.exists():
+                raise ValidationError('This artisan already has an approved leave during these dates.')
