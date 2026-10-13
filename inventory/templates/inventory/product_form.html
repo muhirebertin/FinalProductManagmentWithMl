@@ -1,0 +1,62 @@
+<!-- inventory/templates/inventory/product_form.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card card-primary">
+    <div class="card-header">
+        <h3 class="card-title">{{ title }}</h3>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
+
+            <!-- Section 1: Main Product Details -->
+            <h5 class="text-primary border-bottom pb-2 mb-3">1. Product Information</h5>
+            {{ form.as_p }}
+
+            <!-- Section 2: The Bill of Materials (Inline Formset) -->
+            <h5 class="text-primary border-bottom pb-2 mt-4 mb-3">2. Raw Materials Recipe (BOM)</h5>
+
+            <!-- CRITICAL: Django requires the management form to track the rows -->
+            {{ formset.management_form }}
+
+            <table class="table table-sm table-bordered bg-light">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Material</th>
+                        <th>Quantity Needed</th>
+                        <th>Remove?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bom_form in formset %}
+                    <tr>
+                        <!-- Render hidden fields (like ID) so editing works properly -->
+                        {% for hidden in bom_form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+
+                        <td>{{ bom_form.material }}</td>
+                        <td>{{ bom_form.quantity_per_unit }}</td>
+                        <td class="text-center align-middle">
+                            <!-- Only show the delete checkbox if this is an existing row being edited -->
+                            {% if bom_form.instance.pk %}
+                                {{ bom_form.DELETE }} Delete
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <small class="form-text text-muted">Leave unused material rows blank.</small>
+
+        </div>
+
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save Product Catalog</button>
+            <a href="{% url 'inventory:product_list' %}" class="btn btn-default float-right">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

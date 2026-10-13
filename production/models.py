@@ -65,12 +65,29 @@ class ProductionTask(models.Model):
         if self.assigned_to and not self.assigned_to.is_active:
             raise ValidationError({'assigned_to': 'Cannot assign tasks to an inactive artisan.'})
 
-        # 2. New Quantitative Rules
+        # 2. Smart State & Quantitative Validation
         if self.produced_quantity > self.target_quantity:
             raise ValidationError({'produced_quantity': 'Produced quantity cannot exceed the target quantity.'})
 
-        if self.status == 'Completed' and self.produced_quantity < self.target_quantity:
-            raise ValidationError({'status': 'A task can only be marked Completed when all units are produced.'})
+        # Rule A: Pending tasks must have 0 progress
+        if self.status == 'Pending' and self.produced_quantity > 0:
+            raise ValidationError({
+                'status': 'A task with production progress must be marked as "In Progress".',
+                'produced_quantity': 'Progress must be 0 for a Pending task.'
+            })
+
+        # Rule B: Completed tasks must be at 100% progress
+        if self.status == 'Completed' and self.produced_quantity != self.target_quantity:
+            raise ValidationError({
+                'status': f'Cannot mark as Completed. You have only produced {self.produced_quantity} out of {self.target_quantity}.',
+                'produced_quantity': 'Must equal the target quantity to complete the task.'
+            })
+
+        # Rule C: If a task reaches 100%, force the user to mark it Completed
+        if self.status == 'In Progress' and self.produced_quantity == self.target_quantity:
+            raise ValidationError({
+                'status': 'Target quantity reached! Please change the status to "Completed".'
+            })
 
         # 3. The Bill of Materials (BOM) Stock Check
         # We only check this for NEW tasks (not self.pk) so we don't block saving updates later
