@@ -1,0 +1,25 @@
+<!-- production/templates/production/task_confirm_delete.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">Confirm Deletion</h3>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete the task: <strong>{{ task.title }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone and will remove it from the production queue.</p>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <a href="{% url 'production:task_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
