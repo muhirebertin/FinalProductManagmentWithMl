@@ -1,0 +1,67 @@
+<!-- production/templates/production/task_list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h3 class="card-title">Manufacturing Queue</h3>
+                <div class="card-tools">
+                    <a href="{% url 'production:task_create' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Assign New Task
+                    </a>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Task</th>
+                            <th>Assigned Artisan</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.id }}</td>
+                            <td>{{ task.title }}</td>
+                            <td>{{ task.assigned_to|default:"Unassigned" }}</td>
+                            <td>{{ task.due_date }}</td>
+                            <td>
+                                {% if task.status == 'Completed' %}
+                                    <span class="badge badge-success">{{ task.status }}</span>
+                                {% elif task.status == 'In Progress' %}
+                                    <span class="badge badge-info">{{ task.status }}</span>
+                                {% else %}
+                                    <span class="badge badge-warning">{{ task.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'production:task_update' task.pk %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'production:task_delete' task.pk %}" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                                <a href="{% url 'production:task_detail' task.pk %}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No production tasks scheduled for Le Mieux Ltd.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

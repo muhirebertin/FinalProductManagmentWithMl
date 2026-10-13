@@ -3,14 +3,111 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">System Status</h3>
+    <!-- Stat Box 1: Total Artisans -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ total_artisans }}</h3>
+                <p>Active Artisans</p>
             </div>
-            <div class="card-body">
-                <h4>Welcome to the Dashboard</h4>
-                <p>If you see this inside the AdminLTE layout, your static files are working perfectly!</p>
+            <div class="icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <a href="{% url 'employees:employee_list' %}" class="small-box-footer">View Roster <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Stat Box 2: Total Tasks -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3>{{ total_tasks }}</h3>
+                <p>Total Production Tasks</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <a href="{% url 'production:task_list' %}" class="small-box-footer">View Queue <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Stat Box 3: Pending Tasks -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ pending_tasks }}</h3>
+                <p>Pending Tasks</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <a href="{% url 'production:task_list' %}" class="small-box-footer">Manage <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Stat Box 4: Completed Tasks -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ completed_tasks }}</h3>
+                <p>Completed Tasks</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <a href="{% url 'production:task_list' %}" class="small-box-footer">Manage <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tasks Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header border-transparent">
+                <h3 class="card-title">Recent Manufacturing Tasks for Le Mieux Ltd</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table m-0">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Item / Title</th>
+                                <th>Status</th>
+                                <th>Assigned Artisan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in recent_tasks %}
+                            <tr>
+                                <td><a href="{% url 'production:task_detail' task.pk %}">TSK-{{ task.id }}</a></td>
+                                <td>{{ task.title }}</td>
+                                <td>
+                                    {% if task.status == 'Completed' %}
+                                        <span class="badge badge-success">{{ task.status }}</span>
+                                    {% elif task.status == 'In Progress' %}
+                                        <span class="badge badge-info">{{ task.status }}</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">{{ task.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="sparkbar" data-color="#00a65a" data-height="20">{{ task.assigned_to|default:"Unassigned" }}</div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No recent tasks found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer clearfix">
+                <a href="{% url 'production:task_create' %}" class="btn btn-sm btn-info float-left">Create New Task</a>
+                <a href="{% url 'production:task_list' %}" class="btn btn-sm btn-secondary float-right">View All Tasks</a>
             </div>
         </div>
     </div>

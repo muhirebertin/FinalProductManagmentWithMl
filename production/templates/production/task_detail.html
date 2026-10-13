@@ -1,0 +1,51 @@
+<!-- production/templates/production/task_detail.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">Production Task Details</h3>
+            </div>
+            <div class="card-body">
+                <strong><i class="fas fa-clipboard-list mr-1"></i> Task Title</strong>
+                <p class="text-muted">{{ task.title }}</p>
+                <hr>
+                <strong><i class="fas fa-align-left mr-1"></i> Description</strong>
+                <p class="text-muted">{{ task.description }}</p>
+                <hr>
+                <strong><i class="fas fa-user-tag mr-1"></i> Assigned Artisan</strong>
+                <p class="text-muted">{{ task.assigned_to|default:"Unassigned" }}</p>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4">
+                        <strong><i class="fas fa-calendar-alt mr-1"></i> Due Date</strong>
+                        <p class="text-muted">{{ task.due_date }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <strong><i class="fas fa-clock mr-1"></i> Created At</strong>
+                        <p class="text-muted">{{ task.created_at|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <strong><i class="fas fa-info-circle mr-1"></i> Status</strong>
+                        <p class="text-muted">
+                            {% if task.status == 'Completed' %}
+                                <span class="badge badge-success">{{ task.status }}</span>
+                            {% elif task.status == 'In Progress' %}
+                                <span class="badge badge-info">{{ task.status }}</span>
+                            {% else %}
+                                <span class="badge badge-warning">{{ task.status }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'production:task_list' %}" class="btn btn-secondary">Back to Queue</a>
+                <a href="{% url 'production:task_update' task.pk %}" class="btn btn-primary float-right">Edit Task</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
