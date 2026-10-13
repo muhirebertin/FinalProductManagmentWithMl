@@ -1,0 +1,80 @@
+<!-- production/templates/production/alerts.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">System Alerts Center</h2>
+
+<div class="row">
+    <!-- Low Stock Alerts -->
+    <div class="col-md-6">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-ban mr-1"></i> Low Inventory</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>In Stock</th>
+                            <th>Reorder Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in low_stock_materials %}
+                        <tr>
+                            <td><strong>{{ item.name }}</strong> ({{ item.code }})</td>
+                            <td class="text-danger font-weight-bold">{{ item.quantity_in_stock }} {{ item.unit }}</td>
+                            <td>{{ item.reorder_level }} {{ item.unit }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-success">Inventory levels are healthy.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'inventory:material_list' %}" class="btn btn-sm btn-secondary">Go to Inventory</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Tasks Alerts -->
+    <div class="col-md-6">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> Overdue Tasks</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Due Date</th>
+                            <th>Assigned To</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in overdue_tasks %}
+                        <tr>
+                            <td><a href="{% url 'production:task_detail' task.pk %}">{{ task.title }}</a></td>
+                            <td class="text-danger font-weight-bold">{{ task.due_date }}</td>
+                            <td>{{ task.assigned_to|default:"Unassigned" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-success">No overdue tasks.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'production:task_list' %}" class="btn btn-sm btn-secondary">Go to Production Queue</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,6 +2,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% if alert_count > 0 %}
+<div class="row mb-3">
+    <div class="col-12">
+        <!-- The 'pulse' animation CSS makes it blink -->
+        <a href="{% url 'production:system_alerts' %}" class="btn btn-danger btn-block shadow-sm" style="animation: pulse 2s infinite;">
+            <i class="fas fa-exclamation-triangle"></i> You have {{ alert_count }} active system warnings. Click here to view the Alerts Center.
+        </a>
+    </div>
+</div>
+<style>
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.6; transform: scale(0.99); }
+        100% { opacity: 1; }
+    }
+</style>
+{% endif %}
+
 <div class="row">
     <!-- Stat Box 1: Total Artisans -->
     <div class="col-lg-3 col-6">
@@ -65,7 +83,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header border-transparent">
-                <h3 class="card-title">Recent Manufacturing Tasks for Le Mieux Ltd</h3>
+                <h3 class="card-title">Recent Manufacturing Tasks</h3>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -106,7 +124,9 @@
                 </div>
             </div>
             <div class="card-footer clearfix">
-                <a href="{% url 'production:task_create' %}" class="btn btn-sm btn-info float-left">Create New Task</a>
+                {% if request.user.is_staff %}
+                    <a href="{% url 'production:task_create' %}" class="btn btn-sm btn-info float-left">Create New Task</a>
+                {% endif %}
                 <a href="{% url 'production:task_list' %}" class="btn btn-sm btn-secondary float-right">View All Tasks</a>
             </div>
         </div>

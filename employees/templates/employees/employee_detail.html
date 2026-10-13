@@ -3,33 +3,135 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-6 offset-md-3">
-        <div class="card card-info">
-            <div class="card-header">
-                <h3 class="card-title">Artisan Details</h3>
+    <!-- LEFT COLUMN: Basic Information -->
+    <div class="col-md-4">
+        <div class="card card-primary card-outline">
+            <div class="card-body box-profile">
+                <div class="text-center mb-3">
+                    <i class="fas fa-user-circle fa-5x text-secondary"></i>
+                </div>
+                <h3 class="profile-username text-center">{{ employee.first_name }} {{ employee.last_name }}</h3>
+                <p class="text-muted text-center">{{ employee.department.name }}</p>
+
+                <ul class="list-group list-group-unbordered mb-3">
+                    <li class="list-group-item">
+                        <b>Email</b> <a class="float-right">{{ employee.email }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Phone</b> <a class="float-right">{{ employee.phone_number }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Status</b>
+                        <a class="float-right">
+                            {% if employee.is_active %}
+                                <span class="badge badge-success">Active</span>
+                            {% else %}
+                                <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+                <a href="{% url 'employees:employee_update' employee.pk %}" class="btn btn-primary btn-block"><b>Edit Profile</b></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: HR Management Tabs -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header p-2">
+                <ul class="nav nav-pills">
+                    <!-- Nav Tabs -->
+                    <li class="nav-item"><a class="nav-link active" href="#contracts" data-toggle="tab">Contracts</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#leaves" data-toggle="tab">Leave Requests</a></li>
+                </ul>
             </div>
             <div class="card-body">
-                <strong><i class="fas fa-id-badge mr-1"></i> Full Name</strong>
-                <p class="text-muted">{{ employee.first_name }} {{ employee.last_name }}</p>
-                <hr>
-                <strong><i class="fas fa-building mr-1"></i> Department</strong>
-                <p class="text-muted">{{ employee.department.name }}</p>
-                <hr>
-                <strong><i class="fas fa-calendar mr-1"></i> Hire Date</strong>
-                <p class="text-muted">{{ employee.hire_date }}</p>
-                <hr>
-                <strong><i class="fas fa-check-circle mr-1"></i> Status</strong>
-                <p class="text-muted">
-                    {% if employee.is_active %}
-                        <span class="badge badge-success">Active</span>
-                    {% else %}
-                        <span class="badge badge-danger">Inactive</span>
-                    {% endif %}
-                </p>
-            </div>
-            <div class="card-footer">
-                <a href="{% url 'employees:employee_list' %}" class="btn btn-secondary">Back to Roster</a>
-                <a href="{% url 'employees:employee_update' employee.pk %}" class="btn btn-primary float-right">Edit</a>
+                <div class="tab-content">
+
+                    <!-- TAB 1: Contracts -->
+                    <div class="active tab-pane" id="contracts">
+                        <a href="{% url 'employees:contract_create' employee.id %}" class="btn btn-success btn-sm mb-3">
+                            <i class="fas fa-file-signature"></i> Assign New Contract
+                        </a>
+                        <table class="table table-bordered table-striped table-sm text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Salary (RWF)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts %}
+                                <tr>
+                                    <td>{{ contract.contract_type }}</td>
+                                    <td>{{ contract.start_date }}</td>
+                                    <td>{{ contract.end_date|default:"Permanent/Ongoing" }}</td>
+                                    <td>{{ contract.base_salary }}</td>
+                                    <td>
+                                        {% if contract.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted">No contracts on file.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- TAB 2: Leave Requests -->
+                    <div class="tab-pane" id="leaves">
+                        <a href="{% url 'employees:leave_create' employee.id %}" class="btn btn-info btn-sm mb-3">
+                            <i class="fas fa-calendar-plus"></i> Log Leave Request
+                        </a>
+                        <table class="table table-bordered table-striped table-sm text-nowrap">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>HR Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for leave in leaves %}
+                                <tr>
+                                    <td>{{ leave.leave_type }}</td>
+                                    <td>{{ leave.start_date|date:"M d" }} to {{ leave.end_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if leave.status == 'Approved' %}
+                                            <span class="badge badge-success">Approved</span>
+                                        {% elif leave.status == 'Rejected' %}
+                                            <span class="badge badge-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <!-- 1-Click Approval Buttons -->
+                                        {% if leave.status == 'Pending' %}
+                                            <a href="{% url 'employees:update_leave_status' leave.id 'Approved' %}" class="btn btn-success btn-xs"><i class="fas fa-check"></i> Approve</a>
+                                            <a href="{% url 'employees:update_leave_status' leave.id 'Rejected' %}" class="btn btn-danger btn-xs"><i class="fas fa-times"></i> Reject</a>
+                                        {% else %}
+                                            <span class="text-muted"><i class="fas fa-lock"></i> Processed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted">No leave requests.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

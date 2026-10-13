@@ -23,40 +23,78 @@
             </li>
         </ul>
         <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <span class="nav-link">Welcome, {{ request.user.username }}</span>
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle"></i> {{ request.user.username }}
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <!-- Since Django 5, logout requires a POST request for security -->
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Log Out
+                        </button>
+                    </form>
+                </div>
             </li>
         </ul>
     </nav>
 
     <!-- Main Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
-        <a href="/" class="brand-link">
-            <span class="brand-text font-weight-light">CraftForce OS</span>
+        <!-- Brand Logo -->
+        <a href="{% url 'dashboard' %}" class="brand-link">
+            <span class="brand-text font-weight-light">Production Management</span>
         </a>
+
+        <!-- Sidebar -->
         <div class="sidebar">
+            <!-- Sidebar Menu -->
             <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+
+                    <!-- Main Navigation -->
                     <li class="nav-item">
-                        <a href="/" class="nav-link">
+                        <a href="{% url 'dashboard' %}" class="nav-link">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>Dashboard</p>
                         </a>
                     </li>
-                    <li class="nav-header">WORKFORCE</li>
-                    <li class="nav-item">
-                        <a href="{% url 'employees:employee_list' %}" class="nav-link">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>Artisans</p>
-                        </a>
-                    </li>
+
+                    <!-- Restricted HR Section -->
+                    {% if request.user.is_staff %}
+                        <li class="nav-header">HUMAN RESOURCES</li>
+                        <li class="nav-item">
+                            <a href="{% url 'employees:employee_list' %}" class="nav-link">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Artisans & Contracts</p>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Core Operations -->
                     <li class="nav-header">MANUFACTURING</li>
                     <li class="nav-item">
                         <a href="{% url 'production:task_list' %}" class="nav-link">
-                            <i class="nav-icon fas fa-box"></i>
+                            <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>Production Tasks</p>
                         </a>
                     </li>
+
+                    <li class="nav-header">INVENTORY</li>
+                    <li class="nav-item">
+                        <a href="{% url 'inventory:product_list' %}" class="nav-link">
+                            <i class="nav-icon fas fa-box"></i>
+                            <p>Products (BOM)</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'inventory:material_list' %}" class="nav-link">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Raw Materials</p>
+                        </a>
+                    </li>
+
                 </ul>
             </nav>
         </div>

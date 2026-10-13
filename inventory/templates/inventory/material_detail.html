@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card card-info">
+    <div class="card-header">
+        <h3 class="card-title">Material Details: {{ material.name }}</h3>
+    </div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-bordered mb-0">
+            <tbody>
+                <tr><th style="width: 30%">Material Code</th><td><strong>{{ material.code }}</strong></td></tr>
+                <tr><th>Name</th><td>{{ material.name }}</td></tr>
+                <tr><th>Unit of Measurement</th><td>{{ material.unit }}</td></tr>
+                <tr>
+                    <th>Quantity in Stock</th>
+                    <td class="{% if material.quantity_in_stock <= material.reorder_level %}text-danger font-weight-bold{% endif %}">
+                        {{ material.quantity_in_stock }} {{ material.unit }}
+                    </td>
+                </tr>
+                <tr><th>Reorder Level</th><td>{{ material.reorder_level }} {{ material.unit }}</td></tr>
+                <tr><th>Unit Cost</th><td>{{ material.unit_cost }} RWF</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer">
+        <a href="{% url 'inventory:material_list' %}" class="btn btn-secondary">Back to List</a>
+        {% if request.user.is_staff %}
+            <a href="{% url 'inventory:material_update' material.pk %}" class="btn btn-warning float-right">Edit Material</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

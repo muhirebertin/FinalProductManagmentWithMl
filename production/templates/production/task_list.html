@@ -8,9 +8,11 @@
             <div class="card-header bg-dark">
                 <h3 class="card-title">Manufacturing Queue</h3>
                 <div class="card-tools">
-                    <a href="{% url 'production:task_create' %}" class="btn btn-success btn-sm">
-                        <i class="fas fa-plus"></i> Assign New Task
-                    </a>
+                    {% if request.user.is_staff %}
+                        <a href="{% url 'production:task_create' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Assign New Task
+                        </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="card-body table-responsive p-0">
@@ -19,6 +21,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Task</th>
+                            <th>Progress</th>
                             <th>Assigned Artisan</th>
                             <th>Due Date</th>
                             <th>Status</th>
@@ -30,6 +33,12 @@
                         <tr>
                             <td>{{ task.id }}</td>
                             <td>{{ task.title }}</td>
+                            <td>
+                                <div class="progress progress-xs">
+                                    <div class="progress-bar bg-info" style="width: {{ task.progress_percentage }}%"></div>
+                                </div>
+                                <small>{{ task.produced_quantity }} / {{ task.target_quantity }} units ({{ task.progress_percentage }}%)</small>
+                            </td>
                             <td>{{ task.assigned_to|default:"Unassigned" }}</td>
                             <td>{{ task.due_date }}</td>
                             <td>
@@ -42,15 +51,12 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'production:task_update' task.pk %}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a href="{% url 'production:task_delete' task.pk %}" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
-                                <a href="{% url 'production:task_detail' task.pk %}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
+                                <a href="{% url 'production:task_detail' task.pk %}" class="btn btn-info btn-sm"><i class="fas fa-eye"></i> View</a>
+
+                                {% if request.user.is_staff %}
+                                    <a href="{% url 'production:task_update' task.pk %}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
+                                    <a href="{% url 'production:task_delete' task.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}

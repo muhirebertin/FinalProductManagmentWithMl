@@ -1,0 +1,21 @@
+<!-- employees/templates/employees/hr_action_form.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card card-primary">
+    <div class="card-header">
+        <h3 class="card-title">{{ title }}</h3>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
+            <!-- Automatically renders any model form passed from the view -->
+            {{ form.as_p }}
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save Record</button>
+            <a href="{% url 'employees:employee_detail' employee.id %}" class="btn btn-default float-right">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

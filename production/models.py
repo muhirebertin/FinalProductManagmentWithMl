@@ -35,6 +35,13 @@ class ProductionTask(models.Model):
             return self.due_date < datetime.date.today()
         return False
 
+    @property
+    def progress_percentage(self):
+        if self.target_quantity == 0:
+            return 0
+        # Calculates the percentage and rounds it to a whole number
+        return int((self.produced_quantity / self.target_quantity) * 100)
+
     def clean(self):
         super().clean()
         today = datetime.date.today()
