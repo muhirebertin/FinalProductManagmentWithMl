@@ -1,0 +1,16 @@
+<!-- templates/actions.html -->
+<div class="btn-group btn-group-sm">
+    <a href="{{ view_url }}" class="btn btn-info" title="View Details">
+        <i class="fas fa-eye"></i> View
+    </a>
+
+    <!-- Only managers/staff can see the Edit and Delete buttons -->
+    {% if request.user.is_staff %}
+        <a href="{{ edit_url }}" class="btn btn-warning" title="Edit Record">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="{{ delete_url }}" class="btn btn-danger" title="Delete Record">
+            <i class="fas fa-trash"></i> Delete
+        </a>
+    {% endif %}
+</div>

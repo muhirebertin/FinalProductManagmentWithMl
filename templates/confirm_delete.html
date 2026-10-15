@@ -1,0 +1,31 @@
+<!-- templates/confirm_delete.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3 mt-4">
+        <div class="card card-danger shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> Action Required</h3>
+            </div>
+
+            <div class="card-body">
+                <p class="lead">You are about to delete: <strong>{{ object.name }}</strong></p>
+                <p class="text-danger">This action cannot be undone.</p>
+
+                <!-- The POST form is required by Django to actually execute the delete logic -->
+                <form method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Yes, delete
+                    </button>
+                    <!-- Uses the dynamic cancel_url we passed from views.py -->
+                    <a href="{% url cancel_url object.pk %}" class="btn btn-default ml-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
