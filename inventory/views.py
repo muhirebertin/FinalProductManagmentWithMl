@@ -1,22 +1,31 @@
 # inventory/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import ProtectedError
+from django.contrib import messages
 from .models import RawMaterial, Product
 from .forms import RawMaterialForm, ProductForm, BOMForm, BOMFormSet
 
+
 def is_staff_check(user):
     return user.is_staff
+
+
+# ==========================================
+# RAW MATERIAL VIEWS
+# ==========================================
 
 @login_required
 def material_list(request):
     materials = RawMaterial.objects.all()
     return render(request, 'inventory/material_list.html', {'materials': materials})
 
-# Django is crashing because it cannot find this specific block below:
+
 @login_required
-def product_list(request):
-    products = Product.objects.all()
-    return render(request, 'inventory/product_list.html', {'products': products})
+def material_detail(request, pk):
+    material = get_object_or_404(RawMaterial, pk=pk)
+    return render(request, 'inventory/material_detail.html', {'material': material})
+
 
 @login_required
 @user_passes_test(is_staff_check, login_url='/')
@@ -24,11 +33,13 @@ def material_create(request):
     if request.method == 'POST':
         form = RawMaterialForm(request.POST)
         if form.is_valid():
-            form.save()
+            material = form.save()
+            messages.success(request, f"Raw Material '{material.name}' added successfully.")
             return redirect('inventory:material_list')
     else:
         form = RawMaterialForm()
     return render(request, 'inventory/material_form.html', {'form': form, 'title': 'Add New Material'})
+
 
 @login_required
 @user_passes_test(is_staff_check, login_url='/')
@@ -38,41 +49,58 @@ def material_update(request, pk):
         form = RawMaterialForm(request.POST, instance=material)
         if form.is_valid():
             form.save()
+            messages.success(request, f"Raw Material '{material.name}' updated successfully.")
             return redirect('inventory:material_list')
     else:
         form = RawMaterialForm(instance=material)
     return render(request, 'inventory/material_form.html', {'form': form, 'title': 'Edit Material'})
+
 
 @login_required
 @user_passes_test(is_staff_check, login_url='/')
 def material_delete(request, pk):
     material = get_object_or_404(RawMaterial, pk=pk)
     if request.method == 'POST':
-        material.delete()
-        return redirect('inventory:material_list')
-    return render(request, 'inventory/material_confirm_delete.html', {'item': material})
+        try:
+            material.delete()
+            messages.success(request, f"Raw Material '{material.name}' was successfully deleted.")
+            return redirect('inventory:material_list')
+        except ProtectedError:
+            messages.error(
+                request,
+                f"Cannot delete '{material.name}' because it is used in a product's bill of materials. Remove it from the product recipes first."
+            )
+            return redirect('inventory:material_detail', pk=material.id)
+
+    return render(request, 'confirm_delete.html', {
+        'object': material,
+        'title': f"Delete Raw Material: {material.name}",
+        'cancel_url': 'inventory:material_detail'
+    })
+
+
+# ==========================================
+# PRODUCT VIEWS
+# ==========================================
 
 @login_required
-def material_detail(request, pk):
-    material = get_object_or_404(RawMaterial, pk=pk)
-    return render(request, 'inventory/material_detail.html', {'material': material})
+def product_list(request):
+    products = Product.objects.all()
+    return render(request, 'inventory/product_list.html', {'products': products})
 
 
 @login_required
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
-
-    # Update this exact line to match your model's related_name!
     boms = product.bom_items.all()
 
-    # Calculate costs dynamically
     bom_data = []
     total_production_cost = 0
 
+    # Calculate costs dynamically
     for bom in boms:
         cost = bom.quantity_per_unit * bom.material.unit_cost
         total_production_cost += cost
-
         bom_data.append({
             'bom_id': bom.id,
             'material': bom.material,
@@ -99,12 +127,11 @@ def product_create(request):
         form = ProductForm(request.POST)
         formset = BOMFormSet(request.POST)
 
-        # Check that both the product details AND the recipe are valid
         if form.is_valid() and formset.is_valid():
             product = form.save()
-            # Attach the new product to the raw materials before saving
             formset.instance = product
             formset.save()
+            messages.success(request, f"Product '{product.name}' and its recipe were created successfully.")
             return redirect('inventory:product_detail', pk=product.id)
     else:
         form = ProductForm()
@@ -128,6 +155,7 @@ def product_update(request, pk):
         if form.is_valid() and formset.is_valid():
             form.save()
             formset.save()
+            messages.success(request, f"Product '{product.name}' and its recipe were updated successfully.")
             return redirect('inventory:product_detail', pk=product.id)
     else:
         form = ProductForm(instance=product)
@@ -144,27 +172,21 @@ def product_update(request, pk):
 @user_passes_test(is_staff_check, login_url='/')
 def product_delete(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    if request.method == 'POST':
-        product.delete()
-        return redirect('inventory:product_list')
-    return render(request, 'inventory/product_confirm_delete.html', {'item': product})
 
-"""
-@login_required
-@user_passes_test(is_staff_check, login_url='/')
-def bom_create(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
-        form = BOMForm(request.POST)
-        if form.is_valid():
-            bom = form.save(commit=False)
-            bom.product = product
-            bom.save()
+        try:
+            product.delete()
+            messages.success(request, f"Product '{product.name}' was successfully deleted.")
+            return redirect('inventory:product_list')
+        except ProtectedError:
+            messages.error(
+                request,
+                f"Cannot delete '{product.name}' because it is assigned to active production tasks. Please delete those tasks first."
+            )
             return redirect('inventory:product_detail', pk=product.id)
-    else:
-        form = BOMForm()
 
-    return render(request, 'inventory/product_form.html', {
-        'form': form,
-        'title': f'Add Material to {product.name}'
-    })"""
+    return render(request, 'confirm_delete.html', {
+        'object': product,
+        'title': f"Delete Product: {product.name}",
+        'cancel_url': 'inventory:product_detail'
+    })

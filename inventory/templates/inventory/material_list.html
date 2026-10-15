@@ -1,6 +1,8 @@
 <!-- inventory/templates/inventory/material_list.html -->
 {% extends 'base.html' %}
+{% load static %}
 
+{% block title %}Materials list{% endblock %}
 {% block content %}
 <div class="card">
     <div class="card-header bg-dark text-white">
@@ -41,11 +43,13 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{% url 'inventory:material_detail' item.pk %}" class="btn btn-info btn-sm"><i class="fas fa-eye"></i> View</a>
-                        {% if request.user.is_staff %}
-                            <a href="{% url 'inventory:material_update' item.pk %}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
-                            <a href="{% url 'inventory:material_delete' item.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</a
-                        {% endif %}
+                        <!-- 1. We assign the URLs to variables first -->
+                        {% url 'inventory:product_detail' product.pk as view_url %}
+                        {% url 'inventory:product_update' product.pk as edit_url %}
+                        {% url 'inventory:product_delete' product.pk as delete_url %}
+
+                        <!-- 2. We inject the shared buttons file -->
+                        {% include 'actions.html' %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -53,4 +57,33 @@
         </table>
     </div>
 </div>
+{% endblock %}
+{% block extra_css %}
+    <!-- DataTables CSS (Included in your AdminLTE plugins folder) -->
+    <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+    <!-- DataTables JS -->
+    <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+    <!-- Activate Search and Filter on your tables -->
+    <script>
+        $(document).ready(function() {
+            // This script looks for any table with the class "table" and upgrades it
+            $('.table').DataTable({
+                "paging": true,          // Adds page numbers at the bottom
+                "lengthChange": false,   // Hides the "Show X entries" dropdown to keep it clean
+                "searching": true,       // Adds the dynamic search bar at the top right
+                "ordering": true,        // Allows you to click column headers to sort
+                "info": true,            // Shows "Showing 1 to 10 of 50 entries"
+                "autoWidth": false,
+                "responsive": true,
+                "language": {
+                    "search": "Quick Search:" // Customizes the search bar text
+                }
+            });
+        });
+    </script>
 {% endblock %}
