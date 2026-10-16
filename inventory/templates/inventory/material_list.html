@@ -2,7 +2,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Materials list{% endblock %}
+{% block title %}Materials List{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="card-header bg-dark text-white">
@@ -43,14 +44,18 @@
                         {% endif %}
                     </td>
                     <td>
-                        <!-- 1. We assign the URLs to variables first -->
-                        {% url 'inventory:product_detail' product.pk as view_url %}
-                        {% url 'inventory:product_update' product.pk as edit_url %}
-                        {% url 'inventory:product_delete' product.pk as delete_url %}
+                        <!-- Fixed: Correctly targets inventory material URLs and uses item.pk -->
+                        {% url 'inventory:material_detail' item.pk as view_url %}
+                        {% url 'inventory:material_update' item.pk as edit_url %}
+                        {% url 'inventory:material_delete' item.pk as delete_url %}
 
-                        <!-- 2. We inject the shared buttons file -->
+                        <!-- Injects the shared actions buttons -->
                         {% include 'actions.html' %}
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No raw materials found in warehouse stock.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -58,8 +63,9 @@
     </div>
 </div>
 {% endblock %}
+
 {% block extra_css %}
-    <!-- DataTables CSS (Included in your AdminLTE plugins folder) -->
+    <!-- DataTables CSS -->
     <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
 {% endblock %}
 
@@ -71,17 +77,16 @@
     <!-- Activate Search and Filter on your tables -->
     <script>
         $(document).ready(function() {
-            // This script looks for any table with the class "table" and upgrades it
             $('.table').DataTable({
-                "paging": true,          // Adds page numbers at the bottom
-                "lengthChange": false,   // Hides the "Show X entries" dropdown to keep it clean
-                "searching": true,       // Adds the dynamic search bar at the top right
-                "ordering": true,        // Allows you to click column headers to sort
-                "info": true,            // Shows "Showing 1 to 10 of 50 entries"
+                "paging": true,
+                "lengthChange": false,
+                "searching": true,
+                "ordering": true,
+                "info": true,
                 "autoWidth": false,
                 "responsive": true,
                 "language": {
-                    "search": "Quick Search:" // Customizes the search bar text
+                    "search": "Quick Search:"
                 }
             });
         });
