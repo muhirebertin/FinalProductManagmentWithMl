@@ -1,0 +1,71 @@
+{% load analytics_tags %}
+{# Shared rendering of a prediction payload `p` (see analytics.ml.service.predict_job) #}
+<div class="row">
+    <div class="col-md-4 text-center mb-3">
+        {% with color=p.risk_level|risk_badge %}
+        <div class="prob-ring" style="background: conic-gradient({% if color == 'danger' %}#dc3545{% elif color == 'warning' %}#ffc107{% else %}#28a745{% endif %} {{ p.delay_probability|pct }}, rgba(108,117,125,.18) 0);">
+            <div class="value">{{ p.delay_probability|pct }}<small>delay risk</small></div>
+        </div>
+        <span class="badge badge-{{ color }} mt-2 px-3 py-1" style="font-size:.95rem">{{ p.risk_level }} risk</span>
+        {% endwith %}
+        {% if p.shortages %}
+        <div class="mt-2"><span class="badge badge-danger px-2 py-1"><i class="fas fa-lock mr-1"></i> Blocked until restocked</span></div>
+        <div class="text-muted text-xs mt-1">Risk and duration already include the expected restock wait.</div>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-6 mb-2"><div class="metric-tile"><div class="label">Expected duration</div><div class="value">{{ p.predicted_days }} <small>days</small></div></div></div>
+            <div class="col-6 mb-2"><div class="metric-tile"><div class="label">Time allowed</div><div class="value">{{ p.allotted_days }} <small>days</small></div></div></div>
+            <div class="col-6 mb-2"><div class="metric-tile"><div class="label">Forecast completion</div><div class="value" style="font-size:1.15rem">{{ p.predicted_completion }}</div></div></div>
+            <div class="col-6 mb-2"><div class="metric-tile"><div class="label">Expected lateness</div>
+                <div class="value {% if p.expected_delay_days %}text-danger{% else %}text-success{% endif %}">{% if p.expected_delay_days %}+{{ p.expected_delay_days }} <small>days</small>{% else %}On time{% endif %}</div></div></div>
+        </div>
+        <p class="text-sm text-muted mb-0">Engineering standard: {{ p.standard_days }} days &middot; Artisan: <b>{{ p.artisan.name|default:"Unassigned" }}</b>
+            {% if p.artisan %}({{ p.artisan.contract }}, {{ p.artisan.workload }} active task{{ p.artisan.workload|pluralize }}){% endif %}</p>
+    </div>
+</div>
+
+<h6 class="mt-3"><i class="fas fa-lightbulb text-warning mr-1"></i> Recommendations</h6>
+<ul class="pl-3">{% for r in p.recommendations %}<li>{{ r }}</li>{% endfor %}</ul>
+
+{% if p.shortages %}
+<div class="alert alert-danger py-2"><i class="fas fa-box-open mr-1"></i> <b>Insufficient stock</b> &middot; coverage {{ p.stock_coverage|pct }} of the requirement</div>
+<table class="table table-sm">
+    <thead><tr><th>Material</th><th class="text-right">Required</th><th class="text-right">In stock</th><th class="text-right">Missing</th></tr></thead>
+    <tbody>{% for s in p.shortages %}<tr><td>{{ s.material }}</td><td class="text-right">{{ s.required }} {{ s.unit }}</td><td class="text-right">{{ s.in_stock }}</td><td class="text-right text-danger font-weight-bold">{{ s.missing }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="text-success text-sm"><i class="fas fa-check-circle mr-1"></i> Warehouse stock covers the full Bill of Materials for this batch.</p>
+{% endif %}
+
+{% if p.artisan_ranking|length > 1 %}
+<h6 class="mt-3"><i class="fas fa-users text-info mr-1"></i> Artisan ranking (lowest risk first)</h6>
+<div class="table-responsive">
+<table class="table table-sm table-hover">
+    <thead><tr><th>#</th><th>Artisan</th><th>Department</th><th>Contract</th><th>Workload</th><th style="width:22%">Delay risk</th><th>Duration</th></tr></thead>
+    <tbody>
+    {% for a in p.artisan_ranking %}
+    <tr {% if forloop.first %}class="bg-purple-soft"{% endif %}>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ a.name }} {% if forloop.first %}<span class="badge badge-primary">best</span>{% endif %}
+            {% if p.artisan and a.id == p.artisan.id %}<span class="badge badge-secondary">selected</span>{% endif %}</td>
+        <td class="text-sm">{{ a.department }} {% if a.dept_match %}<i class="fas fa-check text-success" title="Speciality matches the product"></i>{% endif %}</td>
+        <td class="text-sm">{{ a.contract }}</td>
+        <td class="text-sm">{{ a.workload }}</td>
+        <td><span class="badge badge-{{ a.risk_level|risk_badge }}">{{ a.delay_probability|pct }}</span>
+            <div class="risk-meter risk-{{ a.risk_level }} mt-1"><span style="width: {{ a.delay_probability|pct }}"></span></div></td>
+        <td class="text-sm">{{ a.predicted_days }} d</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+<details class="mt-2">
+    <summary class="text-muted text-sm">Model inputs (feature vector) &middot; {{ p.model_version }}</summary>
+    <table class="table table-sm table-striped mt-2 text-sm">
+        {% for k, v in p.features.items %}<tr><td><code>{{ k }}</code></td><td>{{ v }}</td></tr>{% endfor %}
+    </table>
+</details>

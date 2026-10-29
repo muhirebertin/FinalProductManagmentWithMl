@@ -1,5 +1,6 @@
 <!-- templates/dashboard.html -->
 {% extends 'base.html' %}
+{% load static analytics_tags %}
 
 {% block content %}
 {% if alert_count > 0 %}
@@ -31,7 +32,11 @@
             <div class="icon">
                 <i class="fas fa-users"></i>
             </div>
+            {% if request.user.is_staff %}
             <a href="{% url 'employees:employee_list' %}" class="small-box-footer">View Roster <i class="fas fa-arrow-circle-right"></i></a>
+            {% else %}
+            <span class="small-box-footer">Workforce on duty</span>
+            {% endif %}
         </div>
     </div>
 
@@ -77,6 +82,58 @@
         </div>
     </div>
 </div>
+
+
+<!-- ================= AI & ANALYTICS KPI ROW (extension) ================= -->
+{% if ai_enabled %}
+<div class="row">
+    <div class="col-lg-3 col-sm-6">
+        <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-teal elevation-1"><i class="fas fa-warehouse"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Inventory Value</span>
+                <span class="info-box-number">{{ inventory_value|rwf }} <small>RWF</small></span>
+                <span class="text-muted text-sm" id="fxLine"><i class="fas fa-sync fa-spin"></i> Fetching USD rate&hellip;</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-stopwatch"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">On-time Rate</span>
+                <span class="info-box-number">{{ kpis.on_time_rate|default:"-" }}<small>%</small></span>
+                <span class="text-muted text-sm">90 days: {{ kpis.on_time_rate_90d|default:"-" }}% &middot; {{ kpis.records }} batches</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-exclamation-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">High-Risk Open Tasks</span>
+                <span class="info-box-number">{{ at_risk_count|default:0 }} <small>of {{ risk_tasks|length }}</small></span>
+                <span class="text-muted text-sm">+ {{ kpis.orders_high_risk|default:0 }} risky incoming order{{ kpis.orders_high_risk|pluralize }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="info-box shadow-sm">
+            <span class="info-box-icon bg-purple elevation-1"><i class="fas fa-brain"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">AI Model Quality</span>
+                {% if model_classifier %}
+                <span class="info-box-number">{{ model_classifier.metrics.roc_auc }} <small>ROC-AUC</small></span>
+                <span class="text-muted text-sm">&plusmn;{{ model_regressor.metrics.mae|floatformat:1 }} d &middot; {{ kpis.predictions_served }} predictions</span>
+                {% else %}
+                <span class="info-box-number">-</span>
+                <span class="text-muted text-sm">Model not trained</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Recent Tasks Table -->
 <div class="row">
@@ -140,7 +197,7 @@
                     {% for artisan in top_artisans %}
                     <li class="item">
                         <div class="product-info ml-2">
-                            <a href="{% url 'employees:employee_detail' artisan.id %}" class="product-title text-dark">
+                            <a href="{% if request.user.is_staff %}{% url 'employees:employee_detail' artisan.id %}{% else %}#{% endif %}" class="product-title text-dark">
                                 {{ artisan.first_name }} {{ artisan.last_name }}
                                 <span class="badge {% if artisan.active_tasks > 3 %}badge-danger{% elif artisan.active_tasks > 0 %}badge-warning{% else %}badge-success{% endif %} float-right">
                                     {{ artisan.active_tasks }} Active
@@ -156,10 +213,270 @@
                     {% endfor %}
                 </ul>
             </div>
+            {% if request.user.is_staff %}
             <div class="card-footer text-center">
                 <a href="{% url 'employees:employee_list' %}" class="uppercase">View All Artisans</a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- ======================= AI PRODUCTION INTELLIGENCE (extension) ======================= -->
+{% if ai_enabled %}
+<div class="ai-section-title"><i class="fas fa-brain"></i> AI Production Intelligence</div>
+
+{% if not ai_ready %}
+<div class="callout callout-warning">
+    <h5><i class="fas fa-exclamation-triangle"></i> AI engine unavailable</h5>
+    <p class="mb-1">{{ ai_error }}</p>
+    <a href="{% url 'analytics:model_center' %}" class="btn btn-sm btn-warning">Open Model Center</a>
+</div>
+{% else %}
+<div class="row">
+    <!-- Risk monitor for open tasks -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><i class="fas fa-shield-alt mr-1"></i> <b>Delay-Risk Monitor</b> &middot; open production tasks</h3>
+                <div class="card-tools">
+                    <span class="badge badge-danger">{{ risk_counts.High }} High / overdue</span>
+                    <span class="badge badge-warning">{{ risk_counts.Medium }} Medium</span>
+                    <span class="badge badge-success">{{ risk_counts.Low }} Low</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover m-0">
+                        <thead><tr><th>Task</th><th>Artisan</th><th>Due</th><th style="width:22%">Delay risk</th><th>AI forecast</th></tr></thead>
+                        <tbody>
+                        {% for task, r in risk_tasks|slice:":7" %}
+                            <tr>
+                                <td><a href="{% url 'production:task_detail' task.pk %}"><strong>TSK-{{ task.id }}</strong></a>
+                                    <div class="text-muted text-sm text-truncate" style="max-width:220px">{{ task.title }}</div></td>
+                                <td>{{ task.assigned_to|default:"Unassigned" }}</td>
+                                <td>{{ task.due_date|date:"M d" }}</td>
+                                <td>
+                                    {% if r.state == 'overdue' %}
+                                        <span class="badge badge-danger"><i class="fas fa-clock"></i> Overdue</span>
+                                    {% elif r.state == 'scored' %}
+                                        <span class="badge badge-{{ r.risk_level|risk_badge }}">{{ r.risk_level }}</span>
+                                        <span class="text-sm ml-1">{{ r.delay_probability|pct }}</span>
+                                        <div class="risk-meter risk-{{ r.risk_level }} mt-1"><span style="width: {{ r.delay_probability|pct }}"></span></div>
+                                    {% else %}<span class="text-muted">{{ r.label }}</span>{% endif %}
+                                </td>
+                                <td class="text-sm">
+                                    {% if r.state == 'scored' %}~{{ r.predicted_days }} days &rarr; {{ r.predicted_completion }}
+                                    {% elif r.state == 'overdue' %}{{ task.progress_percentage }}% produced &middot; re-plan needed
+                                    {% else %}-{% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">No open production tasks.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer clearfix">
+                <a href="{% url 'analytics:insights' %}#risk-monitor" class="btn btn-sm btn-secondary float-right">Full Risk Monitor</a>
+                <span class="text-muted text-sm">Scored by {{ model_classifier.algorithm }} v{{ model_classifier.version }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task status + risk distribution -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> Task Status</h3></div>
+            <div class="card-body"><div class="chart-box sm"><canvas id="statusChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Live incoming orders -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><span class="live-dot"></span><b>Live Incoming Orders</b> &middot; scored on arrival</h3>
+                <div class="card-tools">
+                    {% if request.user.is_staff %}
+                    <form method="post" action="{% url 'analytics:simulate_orders' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="count" value="3">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-xs btn-outline-light" title="Simulate 3 new orders arriving through the API">
+                            <i class="fas fa-bolt"></i> Simulate orders
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover m-0">
+                        <thead><tr><th>Order</th><th>Product</th><th>Due</th><th>Risk</th><th>Forecast</th><th>Best artisan</th></tr></thead>
+                        <tbody id="liveOrders" data-latest="{{ latest_order_id|default:0 }}">
+                        {% for o in latest_orders %}
+                            <tr>
+                                <td><a href="{% url 'analytics:order_detail' o.pk %}"><strong>{{ o.reference }}</strong></a>
+                                    <div class="text-muted text-sm">{{ o.channel }} &middot; {{ o.received_at|timesince }} ago</div></td>
+                                <td>{{ o.product_code }} &times;{{ o.quantity }}</td>
+                                <td>{{ o.due_date|date:"M d" }}</td>
+                                <td><span class="badge badge-{{ o.risk_level|risk_badge }}">{{ o.risk_level }} {{ o.delay_percent }}%</span>
+                                    {% if not o.stock_ok %}<i class="fas fa-box-open text-danger ml-1" title="Insufficient stock"></i>{% endif %}</td>
+                                <td class="text-sm">~{{ o.predicted_days }} d</td>
+                                <td class="text-sm">{{ o.assigned_artisan|default:"-" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr class="empty-row"><td colspan="6" class="text-center text-muted py-3">Waiting for incoming orders&hellip; POST to <code>/api/v1/orders/</code> or use <em>Simulate orders</em>.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer clearfix">
+                <a href="{% url 'analytics:insights' %}" class="btn btn-sm btn-secondary float-right">All Orders &amp; Insights</a>
+                <span class="text-muted text-sm" id="liveStatus">Auto-refresh every 15 s</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material demand forecast -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><i class="fas fa-boxes mr-1"></i> Material Demand Forecast</h3>
+                <div class="card-tools">{% if forecast_issues %}<span class="badge badge-warning">{{ forecast_issues }} at risk</span>{% endif %}</div>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                {% for f in forecast %}
+                    <li class="list-group-item py-2">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-sm">{{ f.name }}</strong>
+                            {% if f.status == 'shortage' %}<span class="badge badge-danger">Shortage</span>
+                            {% elif f.status == 'reorder' %}<span class="badge badge-warning">Reorder</span>
+                            {% else %}<span class="badge badge-success">OK</span>{% endif %}
+                        </div>
+                        <div class="text-muted text-sm">Stock {{ f.stock }} &middot; pending demand {{ f.pending_demand }} &rarr; <b>{{ f.projected_stock }}</b> {{ f.unit }}</div>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted text-center">No materials.</li>
+                {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center text-sm text-muted">Projection if all new orders are accepted</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Production Output &amp; Delay Rate (12 months)</h3></div>
+            <div class="card-body"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-bar mr-1"></i> Delay Rate by Category</h3></div>
+            <div class="card-body"><div class="chart-box"><canvas id="categoryChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+{{ ai_charts|json_script:"ai-charts-data" }}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if ai_enabled %}
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+$(function () {
+    var dark = $('body').hasClass('dark-mode');
+    Chart.defaults.global.defaultFontColor = dark ? '#ced4da' : '#495057';
+    Chart.defaults.global.defaultFontFamily = "'Source Sans Pro', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+    var gridColor = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+    var dataEl = document.getElementById('ai-charts-data');
+    var data = dataEl ? JSON.parse(dataEl.textContent) : null;
+
+    if (data && document.getElementById('statusChart')) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: { labels: data.status.labels,
+                    datasets: [{ data: data.status.values, backgroundColor: ['#ffc107', '#17a2b8', '#28a745'], borderWidth: 1 }] },
+            options: { maintainAspectRatio: false, cutoutPercentage: 62, legend: { position: 'bottom' } }
+        });
+    }
+    if (data && document.getElementById('trendChart')) {
+        new Chart(document.getElementById('trendChart'), {
+            type: 'bar',
+            data: { labels: data.trend.labels, datasets: [
+                { type: 'line', label: 'Delay rate (%)', data: data.trend.delay_rate, yAxisID: 'pct',
+                  borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', fill: false, lineTension: .3, pointRadius: 3 },
+                { type: 'bar', label: 'Units produced', data: data.trend.units, yAxisID: 'units', backgroundColor: 'rgba(111,66,193,.65)' }
+            ] },
+            options: { maintainAspectRatio: false, legend: { position: 'bottom' },
+                tooltips: { mode: 'index', intersect: false },
+                scales: { xAxes: [{ gridLines: { display: false } }],
+                          yAxes: [{ id: 'units', position: 'left', ticks: { beginAtZero: true }, gridLines: { color: gridColor },
+                                    scaleLabel: { display: true, labelString: 'Units' } },
+                                  { id: 'pct', position: 'right', ticks: { beginAtZero: true, max: 100 }, gridLines: { display: false },
+                                    scaleLabel: { display: true, labelString: 'Delay %' } }] } }
+        });
+    }
+    if (data && document.getElementById('categoryChart')) {
+        var cats = data.category;
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'horizontalBar',
+            data: { labels: cats.map(function (c) { return c.category; }),
+                    datasets: [{ label: 'Delay rate (%)', data: cats.map(function (c) { return c.delay_rate; }),
+                                 backgroundColor: cats.map(function (c) { return c.delay_rate >= 40 ? '#dc3545' : (c.delay_rate >= 25 ? '#ffc107' : '#28a745'); }) }] },
+            options: { maintainAspectRatio: false, legend: { display: false },
+                       scales: { xAxes: [{ ticks: { beginAtZero: true, max: 100 }, gridLines: { color: gridColor } }],
+                                 yAxes: [{ gridLines: { display: false } }] } }
+        });
+    }
+
+    // ---- Open API: live exchange rate -> inventory value in USD
+    $.getJSON("{% url 'api:fx_rate' %}").done(function (r) {
+        var d = r.data, label = { live: 'live', cached: 'last known', fallback: 'offline' }[d.status] || d.status;
+        $('#fxLine').html('&asymp; $' + Number(d.inventory_value_usd).toLocaleString() +
+            ' &middot; 1 USD = ' + Number(d.rate).toLocaleString() + ' RWF <span class="badge badge-' +
+            (d.status === 'live' ? 'success' : 'secondary') + '">' + label + '</span>');
+    }).fail(function () { $('#fxLine').text('Exchange rate unavailable'); });
+
+    // ---- Live incoming orders: poll the REST API for new rows
+    var $body = $('#liveOrders');
+    function esc(t) { return $('<div>').text(t == null ? '' : t).html(); }
+    var badge = { High: 'danger', Medium: 'warning', Low: 'success' };
+    function poll() {
+        var since = parseInt($body.data('latest') || 0, 10);
+        $.getJSON("{% url 'api:orders' %}", { since_id: since, limit: 10 }).done(function (r) {
+            var rows = r.data || [];
+            if (rows.length) {
+                $body.find('.empty-row').remove();
+                rows.slice().reverse().forEach(function (o) {
+                    var p = o.prediction;
+                    var tr = '<tr class="ai-new"><td><a href="/analytics/orders/' + o.id + '/"><strong>' + esc(o.reference) + '</strong></a>' +
+                        '<div class="text-muted text-sm">' + esc(o.channel) + ' &middot; just now</div></td>' +
+                        '<td>' + esc(o.product_code) + ' &times;' + o.quantity + '</td><td>' + esc(o.due_date) + '</td>' +
+                        '<td><span class="badge badge-' + (badge[p.risk_level] || 'secondary') + '">' + esc(p.risk_level) + ' ' +
+                        Math.round(p.delay_probability * 100) + '%</span>' + (p.stock_ok ? '' : ' <i class="fas fa-box-open text-danger" title="Insufficient stock"></i>') + '</td>' +
+                        '<td class="text-sm">~' + p.predicted_days + ' d</td><td class="text-sm">' + esc(o.requested_artisan || p.recommended_artisan || '-') + '</td></tr>';
+                    $body.prepend(tr);
+                });
+                $body.find('tr').slice(8).remove();
+                $body.data('latest', r.meta.latest_id);
+            }
+            $('#liveStatus').text('Last checked ' + new Date().toLocaleTimeString() + ' \u00b7 auto-refresh every 15 s');
+        });
+    }
+    setInterval(poll, 15000);
+});
+</script>
+{% endif %}
 {% endblock %}

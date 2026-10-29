@@ -1,5 +1,6 @@
 <!-- production/templates/production/task_detail.html -->
 {% extends 'base.html' %}
+{% load analytics_tags %}
 
 {% block content %}
 <div class="row">
@@ -43,7 +44,47 @@
             </div>
             <div class="card-footer">
                 <a href="{% url 'production:task_list' %}" class="btn btn-secondary">Back to Queue</a>
+                {% if request.user.is_staff %}
                 <a href="{% url 'production:task_update' task.pk %}" class="btn btn-primary float-right">Edit Task</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Risk Assessment (AI & Analytics extension) -->
+        {% task_risk task as ai %}
+        <div class="card card-outline card-purple">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-brain text-purple mr-1"></i> AI Risk Assessment</h3>
+                <div class="card-tools">
+                    {% if ai.state == 'scored' %}<span class="badge badge-{{ ai.risk_level|risk_badge }}">{{ ai.risk_level }} risk</span>
+                    {% elif ai.state == 'overdue' %}<span class="badge badge-danger">Overdue</span>
+                    {% elif ai.state == 'completed' %}<span class="badge badge-success">Completed</span>{% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if ai.state == 'scored' %}
+                <div class="row text-center">
+                    <div class="col-6 col-md-3"><div class="metric-tile"><div class="label">Delay probability</div><div class="value text-{{ ai.risk_level|risk_badge }}">{{ ai.delay_probability|pct }}</div></div></div>
+                    <div class="col-6 col-md-3"><div class="metric-tile"><div class="label">Expected duration</div><div class="value">{{ ai.predicted_days }} <small>days</small></div></div></div>
+                    <div class="col-6 col-md-3 mt-2 mt-md-0"><div class="metric-tile"><div class="label">Days allowed</div><div class="value">{{ ai.allotted_days }}</div></div></div>
+                    <div class="col-6 col-md-3 mt-2 mt-md-0"><div class="metric-tile"><div class="label">Forecast finish</div><div class="value" style="font-size:1.1rem">{{ ai.predicted_completion }}</div></div></div>
+                </div>
+                {% if ai.progress_projection %}
+                <p class="mt-3 mb-1 text-sm"><i class="fas fa-tachometer-alt mr-1"></i> At the current production pace the batch would finish on
+                    <b class="{% if ai.projection_late %}text-danger{% else %}text-success{% endif %}">{{ ai.progress_projection }}</b>.</p>
+                {% endif %}
+                <ul class="mt-3 mb-0 pl-3">{% for r in ai.recommendations %}<li class="text-sm">{{ r }}</li>{% endfor %}</ul>
+                <p class="text-muted text-xs mt-2 mb-0">Model: {{ ai.model_version }} &middot; probability that the batch finishes after its due date.</p>
+                {% elif ai.state == 'overdue' %}
+                <p class="mb-1">This task is past its due date ({{ task.due_date }}) with {{ task.progress_percentage }}% produced.</p>
+                <p class="text-sm text-muted mb-0">{{ ai.recommendations.0 }}</p>
+                {% elif ai.state == 'completed' %}
+                <p class="mb-0 text-sm">This batch is finished. Its real outcome has been added to the production history and will be used the next time the models are retrained.</p>
+                {% elif ai.state == 'error' %}
+                <p class="mb-0 text-sm text-muted">AI assessment unavailable right now. See the <a href="{% url 'analytics:model_center' %}">Model Center</a>.</p>
+                {% else %}
+                <p class="mb-0 text-sm text-muted">No AI assessment for this task ({{ ai.label }}).</p>
+                {% endif %}
             </div>
         </div>
     </div>

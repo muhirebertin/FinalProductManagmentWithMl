@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}API Center{% endblock %}
+
+{% block content %}
+<h3 class="mb-1"><i class="fas fa-plug text-purple mr-2"></i>API Center</h3>
+<p class="text-muted">REST API v1 &middot; JSON over HTTP &middot; base URL <code>{{ base_url }}/api/v1/</code></p>
+
+{% if new_key %}
+<div class="callout callout-success">
+    <h5><i class="fas fa-key"></i> Your new API key</h5>
+    <p class="mb-2">Copy it now. For security only a hash is stored, so it cannot be shown again.</p>
+    <div class="input-group">
+        <input type="text" class="form-control" id="newKey" value="{{ new_key }}" readonly>
+        <div class="input-group-append"><button class="btn btn-success" type="button" id="copyKey"><i class="fas fa-copy"></i> Copy</button></div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><b>Endpoints</b></h3></div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover m-0 text-sm">
+                    <thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Access</th></tr></thead>
+                    <tbody>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/</code></td><td>API index (list of endpoints)</td><td>public</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/health/</code></td><td>Service and AI-engine status</td><td>public</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/products/</code></td><td>Products with BOM, cost and margin (<code>?category=</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/materials/</code></td><td>Raw materials and stock (<code>?low_stock=1</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/employees/</code></td><td>Artisans (no salary data) (<code>?active=1</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/tasks/</code></td><td>Production tasks (<code>?status=</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/tasks/&lt;id&gt;/prediction/</code></td><td>AI risk assessment of one task</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/records/</code></td><td>Training data, paginated (<code>?page=&amp;page_size=&amp;source=&amp;since=</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-warning">POST</span></td><td><code>/api/v1/records/</code></td><td>Push a finished batch from an external system</td><td>staff</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/orders/</code></td><td>Incoming orders + predictions (<code>?status=&amp;risk=&amp;since_id=&amp;limit=</code>)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-warning">POST</span></td><td><code>/api/v1/orders/</code></td><td><b>Ingest a new order</b> &rarr; scored instantly</td><td>staff</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/orders/&lt;id&gt;/</code></td><td>One order with its full prediction</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-warning">POST</span></td><td><code>/api/v1/predict/</code></td><td>Stateless what-if prediction (nothing stored)</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/model/</code></td><td>Active models, metrics and version history</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-warning">POST</span></td><td><code>/api/v1/model/retrain/</code></td><td>Retrain and redeploy the models</td><td>staff</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/dashboard/summary/</code></td><td>KPIs and chart series</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/forecast/materials/</code></td><td>Material demand forecast</td><td>read</td></tr>
+                    <tr><td><span class="endpoint-method text-success">GET</span></td><td><code>/api/v1/external/fx/</code></td><td>Open API: live USD&rarr;RWF rate (<code>?refresh=1</code>)</td><td>read</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-sm text-muted">
+                <b>Authentication:</b> header <code>X-API-Key: &lt;key&gt;</code> (or <code>Authorization: Api-Key &lt;key&gt;</code>), or a logged-in browser session.
+                A key carries the permissions of its owner: <b>read</b> = any user, <b>staff</b> = managers only.
+                Errors use HTTP status codes 400 / 401 / 403 / 404 / 405 / 409 / 503 with a JSON body.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><b>Examples</b></h3></div>
+            <div class="card-body">
+                <p class="text-sm mb-1"><b>1. Send a new incoming order</b> (it is scored and appears live on the dashboard)</p>
+<pre class="api-code">curl -X POST {{ base_url }}/api/v1/orders/ \
+  -H "X-API-Key: YOUR_KEY" -H "Content-Type: application/json" \
+  -d '{"product_code": "Bag-002", "quantity": 8, "due_date": "2026-12-15",
+       "customer": "Kigali Heights Boutique", "channel": "Corporate"}'</pre>
+                <p class="text-sm mb-1 mt-3"><b>2. Ask for a prediction without storing anything</b></p>
+<pre class="api-code">curl -X POST {{ base_url }}/api/v1/predict/ \
+  -H "X-API-Key: YOUR_KEY" -H "Content-Type: application/json" \
+  -d '{"product_code": "Shoe-003", "quantity": 12, "due_date": "2026-12-20", "artisan_id": 3}'</pre>
+                <p class="text-sm mb-1 mt-3"><b>3. Python client</b></p>
+<pre class="api-code">import requests
+API = "{{ base_url }}/api/v1"
+headers = {"X-API-Key": "YOUR_KEY"}
+records = requests.get(f"{API}/records/", params={"page_size": 1000}, headers=headers).json()
+print(records["meta"]["total"], "training records")</pre>
+                <p class="text-sm mb-1 mt-3"><b>4. Stream simulated orders from the command line</b></p>
+<pre class="api-code">python manage.py simulate_orders --count 20 --interval 3 --api-url {{ base_url }} --api-key YOUR_KEY</pre>
+                <p class="text-sm mb-1 mt-3"><b>Example response</b> (<code>POST /api/v1/orders/</code> &rarr; 201 Created)</p>
+<pre class="api-code">{"status": "ok",
+ "data": {"reference": "ORD-261029-0009", "product_code": "Bag-002", "quantity": 8, ...,
+          "prediction": {"delay_probability": 0.12, "risk_level": "Low", "predicted_days": 5.3,
+                         "predicted_completion": "2026-11-04", "recommended_artisan": "Isaac Nkusi",
+                         "stock_ok": true, "recommendations": ["On track: ..."]}},
+ "meta": {"generated_at": "2026-10-29T10:15:02Z"}}</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-primary card-outline">
+            <div class="card-header"><h3 class="card-title"><i class="fas fa-key mr-1"></i> API keys</h3></div>
+            {% if request.user.is_staff %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    <label for="{{ form.name.id_for_label }}">Key label</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="text-danger text-sm">{{ form.name.errors|join:" " }}</div>{% endif %}
+                    <small class="text-muted">The key will act with <b>your</b> permissions ({{ request.user.username }}).</small>
+                </div>
+                <div class="card-footer"><button class="btn btn-primary btn-block"><i class="fas fa-plus"></i> Generate key</button></div>
+            </form>
+            <div class="card-body p-0 border-top">
+                <table class="table table-sm m-0 text-sm">
+                    <thead><tr><th>Label</th><th>Owner</th><th>Last used</th><th></th></tr></thead>
+                    <tbody>
+                    {% for k in keys %}
+                    <tr class="{% if not k.is_active %}text-muted{% endif %}">
+                        <td>{{ k.name }}<div class="text-xs"><code>{{ k.prefix }}&hellip;</code></div></td>
+                        <td>{{ k.user.username }}</td>
+                        <td>{{ k.last_used_at|date:"M d H:i"|default:"never" }}</td>
+                        <td>{% if k.is_active %}
+                            <form method="post" action="{% url 'analytics:api_key_revoke' k.pk %}">{% csrf_token %}
+                                <button class="btn btn-xs btn-outline-danger" title="Revoke"><i class="fas fa-ban"></i></button></form>
+                            {% else %}<span class="badge badge-secondary">revoked</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="4" class="text-center text-muted">No keys yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body text-sm text-muted">API keys are issued by managers. While you are logged in, the browser session already gives you read access to the GET endpoints.</div>
+            {% endif %}
+        </div>
+        <div class="card">
+            <div class="card-header"><h3 class="card-title"><i class="fas fa-globe mr-1"></i> External Open API</h3></div>
+            <div class="card-body text-sm">
+                <p>The ERP consumes <b>ExchangeRate-API</b> (<code>open.er-api.com</code>, no key required) to show the inventory value in USD.</p>
+                <p class="mb-0">Responses are cached for 6 hours and the last good value is stored in the database, so the system keeps working offline.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$('#copyKey').on('click', function () {
+    var el = document.getElementById('newKey'); el.select();
+    try { navigator.clipboard.writeText(el.value); } catch (e) { document.execCommand('copy'); }
+    $(this).html('<i class="fas fa-check"></i> Copied');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+/* analytics/static/analytics/analytics.css - AI & Analytics extension styles */
+
+/* Longer sidebar menu: keep it scrollable on small screens */
+.layout-fixed .main-sidebar .sidebar { overflow-y: auto; }
+
+.text-purple { color: #6f42c1 !important; }
+.bg-purple-soft { background: rgba(111, 66, 193, .08); }
+
+/* Section titles on the dashboard */
+.ai-section-title {
+    font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #6c757d; margin: 1.25rem 0 .6rem; display: flex; align-items: center;
+}
+.ai-section-title::after { content: ""; flex: 1; height: 1px; background: rgba(108, 117, 125, .25); margin-left: .75rem; }
+.ai-section-title i { margin-right: .45rem; color: #6f42c1; }
+
+/* Chart containers keep a stable height */
+.chart-box { position: relative; height: 260px; }
+.chart-box.sm { height: 210px; }
+
+/* Risk meter (horizontal) */
+.risk-meter { height: 8px; border-radius: 4px; background: rgba(108, 117, 125, .2); overflow: hidden; min-width: 70px; }
+.risk-meter > span { display: block; height: 100%; border-radius: 4px; }
+.risk-Low > span { background: #28a745; }
+.risk-Medium > span { background: #ffc107; }
+.risk-High > span { background: #dc3545; }
+
+/* Big probability gauge on the predictor page */
+.prob-ring {
+    width: 150px; height: 150px; border-radius: 50%; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center; position: relative;
+}
+.prob-ring::before {
+    content: ""; position: absolute; inset: 14px; border-radius: 50%; background: var(--ring-bg, #fff);
+}
+.prob-ring .value { position: relative; font-size: 2rem; font-weight: 700; line-height: 1; text-align: center; }
+.prob-ring .value small { display: block; font-size: .75rem; font-weight: 500; color: #6c757d; margin-top: .25rem; }
+.dark-mode .prob-ring { --ring-bg: #343a40; }
+
+/* New-row highlight for live updates */
+@keyframes ai-flash { from { background: rgba(111, 66, 193, .25); } to { background: transparent; } }
+tr.ai-new { animation: ai-flash 2.5s ease-out; }
+
+.live-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #28a745;
+    margin-right: 6px; box-shadow: 0 0 0 0 rgba(40, 167, 69, .6); animation: live-pulse 1.8s infinite;
+}
+@keyframes live-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, .6); }
+    70% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+.table-sm td, .table-sm th { vertical-align: middle; }
+.info-box .info-box-number small { font-weight: 400; }
+.metric-tile { border: 1px solid rgba(108, 117, 125, .2); border-radius: .4rem; padding: .7rem .8rem; height: 100%; }
+.metric-tile .label { font-size: .75rem; text-transform: uppercase; color: #6c757d; letter-spacing: .04em; }
+.metric-tile .value { font-size: 1.45rem; font-weight: 700; }
+
+pre.api-code {
+    background: #1f2430; color: #e6e6e6; border-radius: .35rem; padding: .8rem 1rem;
+    font-size: .8rem; white-space: pre-wrap; word-break: break-all; margin-bottom: 0;
+}
+.endpoint-method { font-family: monospace; font-weight: 700; min-width: 52px; display: inline-block; }
+.cm-cell { width: 50%; text-align: center; padding: .9rem .4rem !important; }
+.cm-cell .n { font-size: 1.4rem; font-weight: 700; display: block; }

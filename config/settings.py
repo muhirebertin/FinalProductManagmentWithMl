@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'employees',
     'production',
     'inventory',
+    'analytics',   # AI & Analytics extension (REST API, ML models, live predictions)
 ]
 
 MIDDLEWARE = [
@@ -67,6 +68,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "analytics.context_processors.nav_alerts",
             ],
         },
     },
@@ -137,3 +139,23 @@ MAILERS = {
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = '/login/'
+
+
+# ---------------------------------------------------------------------------
+# AI & Analytics extension
+# ---------------------------------------------------------------------------
+# Folder where trained models (.joblib) are stored.
+ML_MODEL_DIR = BASE_DIR / 'analytics' / 'ml_models'
+
+# Open API integration (live USD -> RWF rate). Set to False to work fully offline.
+AI_EXTERNAL_APIS_ENABLED = True
+# Rate used when the Open API has never been reachable.
+AI_FALLBACK_USD_RWF = 1450.0
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'simple': {'format': '[{levelname}] {name}: {message}', 'style': '{'}},
+    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'}},
+    'loggers': {'analytics': {'handlers': ['console'], 'level': 'INFO', 'propagate': False}},
+}

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load analytics_tags %}
+{% block title %}AI Insights{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0"><i class="fas fa-satellite-dish text-purple mr-2"></i>AI Insights &amp; Incoming Orders</h3>
+        <p class="text-muted mb-0">Every order that arrives through the API is scored instantly by the AI engine.</p>
+    </div>
+    {% if request.user.is_staff %}
+    <form method="post" action="{% url 'analytics:simulate_orders' %}" class="form-inline mt-2 mt-md-0">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <select name="count" class="form-control form-control-sm mr-2" aria-label="Number of orders">
+            <option value="1">1 order</option><option value="3" selected>3 orders</option>
+            <option value="5">5 orders</option><option value="10">10 orders</option>
+        </select>
+        <button class="btn btn-sm btn-primary"><i class="fas fa-bolt"></i> Simulate incoming orders</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-6 col-md-3"><div class="small-box bg-info"><div class="inner"><h3>{{ counts.new }}</h3><p>New orders awaiting decision</p></div><div class="icon"><i class="fas fa-inbox"></i></div></div></div>
+    <div class="col-6 col-md-3"><div class="small-box bg-danger"><div class="inner"><h3>{{ counts.high }}</h3><p>New orders at HIGH risk</p></div><div class="icon"><i class="fas fa-exclamation-triangle"></i></div></div></div>
+    <div class="col-6 col-md-3"><div class="small-box bg-success"><div class="inner"><h3>{{ counts.converted }}</h3><p>Converted to production tasks</p></div><div class="icon"><i class="fas fa-check-double"></i></div></div></div>
+    <div class="col-6 col-md-3"><div class="small-box bg-secondary"><div class="inner"><h3>{{ counts.total }}</h3><p>Orders received in total</p></div><div class="icon"><i class="fas fa-database"></i></div></div></div>
+</div>
+
+<!-- Orders -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <h3 class="card-title"><b>Incoming Orders</b></h3>
+        <div class="card-tools">
+            <div class="btn-group btn-group-sm">
+                {% for s in status_choices %}
+                <a href="?status={{ s }}{% if risk %}&risk={{ risk }}{% endif %}" class="btn {% if status == s %}btn-light{% else %}btn-outline-light{% endif %}">{{ s }}</a>
+                {% endfor %}
+            </div>
+            <div class="btn-group btn-group-sm ml-2">
+                <a href="?status={{ status }}" class="btn {% if not risk %}btn-light{% else %}btn-outline-light{% endif %}">Any risk</a>
+                <a href="?status={{ status }}&risk=High" class="btn {% if risk == 'High' %}btn-danger{% else %}btn-outline-light{% endif %}">High</a>
+                <a href="?status={{ status }}&risk=Medium" class="btn {% if risk == 'Medium' %}btn-warning{% else %}btn-outline-light{% endif %}">Medium</a>
+                <a href="?status={{ status }}&risk=Low" class="btn {% if risk == 'Low' %}btn-success{% else %}btn-outline-light{% endif %}">Low</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm m-0">
+                <thead>
+                <tr><th>Reference</th><th>Customer / Channel</th><th>Product</th><th>Due</th><th style="width:16%">Delay risk</th>
+                    <th>Forecast</th><th>Artisan</th><th>Stock</th><th>Status</th><th class="text-right">Actions</th></tr>
+                </thead>
+                <tbody>
+                {% for o in page %}
+                <tr>
+                    <td><a href="{% url 'analytics:order_detail' o.pk %}"><strong>{{ o.reference }}</strong></a>
+                        <div class="text-muted text-xs">{{ o.received_at|date:"M d, H:i" }} &middot; {{ o.source }}</div></td>
+                    <td>{{ o.customer|default:"-" }}<div class="text-muted text-xs">{{ o.channel }}</div></td>
+                    <td>{{ o.product_code }} &times;{{ o.quantity }}<div class="text-muted text-xs">{{ o.product.name|default:"" }}</div></td>
+                    <td>{{ o.due_date|date:"M d, Y" }}</td>
+                    <td><span class="badge badge-{{ o.risk_level|risk_badge }}">{{ o.risk_level }}</span> <span class="text-sm">{{ o.delay_percent }}%</span>
+                        <div class="risk-meter risk-{{ o.risk_level }} mt-1"><span style="width: {{ o.delay_percent }}%"></span></div></td>
+                    <td class="text-sm">~{{ o.predicted_days }} days<div class="text-muted text-xs">finish {{ o.predicted_completion|date:"M d" }}</div></td>
+                    <td class="text-sm">{% if o.requested_artisan %}{{ o.requested_artisan }}<div class="text-muted text-xs">requested</div>
+                        {% else %}{{ o.recommended_artisan|default:"-" }}<div class="text-muted text-xs">AI recommended</div>{% endif %}</td>
+                    <td>{% if o.stock_ok %}<span class="text-success"><i class="fas fa-check"></i></span>{% else %}<span class="badge badge-danger" title="The task cannot be created until the materials are restocked"><i class="fas fa-lock"></i> restock</span>{% endif %}</td>
+                    <td>{% if o.status == 'Converted' %}<a href="{% url 'production:task_detail' o.converted_task_id %}" class="badge badge-success">TSK-{{ o.converted_task_id }}</a>
+                        {% elif o.status == 'Dismissed' %}<span class="badge badge-secondary">Dismissed</span>
+                        {% else %}<span class="badge badge-info">New</span>{% endif %}</td>
+                    <td class="text-right text-nowrap">
+                        <a href="{% url 'analytics:order_detail' o.pk %}" class="btn btn-xs btn-info" title="View prediction"><i class="fas fa-eye"></i></a>
+                        {% if request.user.is_staff and o.status == 'New' %}
+                        <a href="{% url 'analytics:order_convert' o.pk %}" class="btn btn-xs btn-success" title="Convert to production task"><i class="fas fa-industry"></i></a>
+                        <form method="post" action="{% url 'analytics:order_dismiss' o.pk %}" class="d-inline">
+                            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button class="btn btn-xs btn-outline-secondary" title="Dismiss order"><i class="fas fa-ban"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="text-center text-muted py-4">No orders match this filter.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page.has_other_pages %}
+    <div class="card-footer clearfix">
+        <ul class="pagination pagination-sm m-0 float-right">
+            {% if page.has_previous %}<li class="page-item"><a class="page-link" href="?status={{ status }}&risk={{ risk }}&page={{ page.previous_page_number }}">&laquo;</a></li>{% endif %}
+            <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+            {% if page.has_next %}<li class="page-item"><a class="page-link" href="?status={{ status }}&risk={{ risk }}&page={{ page.next_page_number }}">&raquo;</a></li>{% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Open task risk monitor -->
+    <div class="col-lg-7" id="risk-monitor">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-shield-alt mr-1"></i> <b>Delay-Risk Monitor</b> &middot; all open tasks</h3></div>
+            <div class="card-body p-0">
+                {% if ai_error %}
+                <div class="p-3 text-muted">AI engine unavailable: {{ ai_error }}</div>
+                {% else %}
+                <div class="table-responsive">
+                <table class="table table-sm table-hover m-0">
+                    <thead><tr><th>Task</th><th>Artisan</th><th>Progress</th><th>Due</th><th>Risk</th><th>Advice</th></tr></thead>
+                    <tbody>
+                    {% for task, r in risk_tasks %}
+                    <tr>
+                        <td><a href="{% url 'production:task_detail' task.pk %}"><strong>TSK-{{ task.id }}</strong></a>
+                            <div class="text-muted text-xs text-truncate" style="max-width:200px">{{ task.title }}</div></td>
+                        <td class="text-sm">{{ task.assigned_to|default:"Unassigned" }}</td>
+                        <td class="text-sm">{{ task.progress_percentage }}%</td>
+                        <td class="text-sm">{{ task.due_date|date:"M d" }}</td>
+                        <td>{% if r.state == 'overdue' %}<span class="badge badge-danger">Overdue</span>
+                            {% elif r.state == 'scored' %}<span class="badge badge-{{ r.risk_level|risk_badge }}">{{ r.risk_level }} {{ r.delay_probability|pct }}</span>
+                            {% else %}<span class="text-muted">{{ r.label }}</span>{% endif %}</td>
+                        <td class="text-xs">{{ r.recommendations.0|default:"" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-3">No open production tasks.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Material forecast -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-boxes mr-1"></i> Material Demand Forecast</h3></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="table table-sm m-0">
+                    <thead><tr><th>Material</th><th class="text-right">Stock</th><th class="text-right">Demand</th><th class="text-right">After</th><th></th></tr></thead>
+                    <tbody>
+                    {% for f in forecast %}
+                    <tr>
+                        <td class="text-sm">{{ f.name }}<div class="text-muted text-xs">{{ f.code }} &middot; reorder at {{ f.reorder_level }}</div></td>
+                        <td class="text-right text-sm">{{ f.stock }}</td>
+                        <td class="text-right text-sm">{{ f.pending_demand }}</td>
+                        <td class="text-right text-sm font-weight-bold {% if f.status == 'shortage' %}text-danger{% elif f.status == 'reorder' %}text-warning{% endif %}">{{ f.projected_stock }}</td>
+                        <td>{% if f.status == 'shortage' %}<span class="badge badge-danger">Shortage</span>{% elif f.status == 'reorder' %}<span class="badge badge-warning">Reorder</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted text-sm">Demand = BOM requirement of all <b>New</b> incoming orders.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

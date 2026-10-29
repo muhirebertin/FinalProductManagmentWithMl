@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static analytics_tags %}
+{% block title %}Model Center{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0"><i class="fas fa-microchip text-purple mr-2"></i>Model Center</h3>
+        <p class="text-muted mb-0">Trained models, their evaluation on unseen data, and the version registry.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+        {% if status.ready %}<span class="badge badge-success p-2 mr-2"><i class="fas fa-check-circle"></i> AI engine ready</span>
+        {% else %}<span class="badge badge-warning p-2 mr-2" title="{{ status.reason }}"><i class="fas fa-exclamation-triangle"></i> Not ready (auto-trains on first use)</span>{% endif %}
+        {% if request.user.is_staff %}
+        <form method="post" action="{% url 'analytics:model_retrain' %}" class="d-inline" id="retrainForm">
+            {% csrf_token %}
+            <button class="btn btn-primary" id="retrainBtn"><i class="fas fa-sync-alt"></i> Retrain models now</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Pipeline overview -->
+<div class="card card-outline card-secondary">
+    <div class="card-body py-3">
+        <div class="row text-center text-sm">
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-database fa-lg text-info"></i><div class="font-weight-bold mt-1">1. Data</div><div class="text-muted">{{ record_total }} batches</div></div>
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-plug fa-lg text-info"></i><div class="font-weight-bold mt-1">2. Read via API</div><div class="text-muted"><code>/api/v1/records/</code></div></div>
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-sliders-h fa-lg text-info"></i><div class="font-weight-bold mt-1">3. Features</div><div class="text-muted">18 engineered</div></div>
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-balance-scale fa-lg text-info"></i><div class="font-weight-bold mt-1">4. Compare</div><div class="text-muted">3 algorithms each</div></div>
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-rocket fa-lg text-info"></i><div class="font-weight-bold mt-1">5. Deploy</div><div class="text-muted">joblib + registry</div></div>
+            <div class="col-6 col-md-2 mb-2"><i class="fas fa-bolt fa-lg text-info"></i><div class="font-weight-bold mt-1">6. Serve</div><div class="text-muted">{{ prediction_total }} predictions</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Classifier -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> <b>Delay-Risk Classifier</b></h3>
+                {% if clf %}<div class="card-tools"><span class="badge badge-light">v{{ clf.version }} &middot; {{ clf.algorithm }}</span></div>{% endif %}
+            </div>
+            <div class="card-body">
+                {% if clf %}
+                <p class="text-sm text-muted">Predicts the probability that a batch finishes <b>after</b> its due date. Evaluated on the newest {{ clf.n_test }} batches (never seen during training).</p>
+                <div class="row text-center mb-3">
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">ROC-AUC</div><div class="value text-purple">{{ clf.metrics.roc_auc }}</div></div></div>
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">Accuracy</div><div class="value">{{ clf.metrics.accuracy|pct }}</div></div></div>
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">Precision</div><div class="value">{{ clf.metrics.precision|pct }}</div></div></div>
+                    <div class="col-6 col-md mb-2"><div class="metric-tile"><div class="label">Recall</div><div class="value">{{ clf.metrics.recall|pct }}</div></div></div>
+                    <div class="col-6 col-md mb-2"><div class="metric-tile"><div class="label">F1</div><div class="value">{{ clf.metrics.f1 }}</div></div></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-5">
+                        <h6 class="text-sm font-weight-bold">Confusion matrix (test set)</h6>
+                        <table class="table table-bordered table-sm text-sm">
+                            <tr><th></th><th class="text-center">Pred. on time</th><th class="text-center">Pred. late</th></tr>
+                            <tr><th>Actually on time</th>
+                                <td class="cm-cell"><span class="n text-success">{{ clf.metrics.confusion_matrix.0.0 }}</span>correct</td>
+                                <td class="cm-cell"><span class="n text-warning">{{ clf.metrics.confusion_matrix.0.1 }}</span>false alarm</td></tr>
+                            <tr><th>Actually late</th>
+                                <td class="cm-cell"><span class="n text-danger">{{ clf.metrics.confusion_matrix.1.0 }}</span>missed</td>
+                                <td class="cm-cell"><span class="n text-success">{{ clf.metrics.confusion_matrix.1.1 }}</span>caught</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-7">
+                        <h6 class="text-sm font-weight-bold">Algorithm comparison</h6>
+                        <table class="table table-sm text-sm">
+                            <thead><tr><th>Algorithm</th><th class="text-right">Accuracy</th><th class="text-right">F1</th><th class="text-right">ROC-AUC</th></tr></thead>
+                            <tbody>{% for c in clf.candidates %}
+                            <tr {% if c.algorithm == clf.algorithm %}class="bg-purple-soft font-weight-bold"{% endif %}>
+                                <td>{{ c.algorithm }} {% if c.algorithm == clf.algorithm %}<i class="fas fa-trophy text-warning"></i>{% endif %}</td>
+                                <td class="text-right">{{ c.accuracy }}</td><td class="text-right">{{ c.f1 }}</td><td class="text-right">{{ c.roc_auc }}</td></tr>
+                            {% endfor %}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <h6 class="text-sm font-weight-bold mt-2">What drives the delay risk (feature importance)</h6>
+                <div class="chart-box"><canvas id="clfImportance"></canvas></div>
+                {% else %}
+                <p class="text-muted mb-0">No classifier trained yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Regressor -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title"><i class="fas fa-hourglass-half mr-1"></i> <b>Duration Regressor</b></h3>
+                {% if reg %}<div class="card-tools"><span class="badge badge-light">v{{ reg.version }} &middot; {{ reg.algorithm }}</span></div>{% endif %}
+            </div>
+            <div class="card-body">
+                {% if reg %}
+                <p class="text-sm text-muted">Predicts how many days a batch will actually take. Evaluated on the newest {{ reg.n_test }} batches.</p>
+                <div class="row text-center mb-3">
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">R&sup2;</div><div class="value text-purple">{{ reg.metrics.r2 }}</div></div></div>
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">MAE</div><div class="value">{{ reg.metrics.mae }}<small> d</small></div></div></div>
+                    <div class="col-4 col-md mb-2"><div class="metric-tile"><div class="label">RMSE</div><div class="value">{{ reg.metrics.rmse }}<small> d</small></div></div></div>
+                    <div class="col-6 col-md mb-2"><div class="metric-tile"><div class="label">Median error</div><div class="value">{{ reg.metrics.median_ape }}<small>%</small></div></div></div>
+                    <div class="col-6 col-md mb-2"><div class="metric-tile"><div class="label">Within &plusmn;20%</div><div class="value">{{ reg.metrics.within_20pct }}<small>%</small></div></div></div>
+                </div>
+                <h6 class="text-sm font-weight-bold">Algorithm comparison</h6>
+                <table class="table table-sm text-sm">
+                    <thead><tr><th>Algorithm</th><th class="text-right">MAE (days)</th><th class="text-right">RMSE</th><th class="text-right">R&sup2;</th></tr></thead>
+                    <tbody>{% for c in reg.candidates %}
+                    <tr {% if c.algorithm == reg.algorithm %}class="bg-purple-soft font-weight-bold"{% endif %}>
+                        <td>{{ c.algorithm }} {% if c.algorithm == reg.algorithm %}<i class="fas fa-trophy text-warning"></i>{% endif %}</td>
+                        <td class="text-right">{{ c.mae }}</td><td class="text-right">{{ c.rmse }}</td><td class="text-right">{{ c.r2 }}</td></tr>
+                    {% endfor %}</tbody>
+                </table>
+                <h6 class="text-sm font-weight-bold mt-2">What drives the duration (feature importance)</h6>
+                <div class="chart-box"><canvas id="regImportance"></canvas></div>
+                {% else %}
+                <p class="text-muted mb-0">No regressor trained yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-database mr-1"></i> Training data</h3></div>
+            <div class="card-body p-0">
+                <table class="table table-sm m-0">
+                    <tr><td>Synthetic history (generated)</td><td class="text-right font-weight-bold">{{ sources|get_item:"synthetic"|default:0 }}</td></tr>
+                    <tr><td>Completed real tasks (live)</td><td class="text-right font-weight-bold">{{ sources|get_item:"live"|default:0 }}</td></tr>
+                    <tr><td>Pushed by external systems (API)</td><td class="text-right font-weight-bold">{{ sources|get_item:"api"|default:0 }}</td></tr>
+                    <tr class="bg-light"><td><b>Total</b></td><td class="text-right"><b>{{ record_total }}</b></td></tr>
+                </table>
+            </div>
+            <div class="card-footer text-sm">
+                {% if clf %}Last training read via <code>{{ clf.data_source }}</code> &middot; scikit-learn {{ clf.sklearn_version }}{% endif %}
+                <a href="{% url 'analytics:history' %}" class="float-right">Browse</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-code-branch mr-1"></i> Version registry</h3></div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 290px; overflow-y: auto;">
+                <table class="table table-sm table-hover m-0 text-sm">
+                    <thead><tr><th>Model</th><th>Version</th><th>Algorithm</th><th>Key metric</th><th>Train/Test</th><th>Trained</th><th>By</th><th></th></tr></thead>
+                    <tbody>
+                    {% for m in history %}
+                    <tr>
+                        <td>{{ m.get_name_display }}</td><td>v{{ m.version }}</td><td>{{ m.algorithm }}</td>
+                        <td>{% if m.name == 'delay_classifier' %}AUC {{ m.metrics.roc_auc }}{% else %}MAE {{ m.metrics.mae }} d{% endif %}</td>
+                        <td>{{ m.n_train }}/{{ m.n_test }}</td>
+                        <td>{{ m.trained_at|date:"M d, H:i" }}</td><td class="text-truncate" style="max-width:120px">{{ m.trained_by }}</td>
+                        <td>{% if m.is_active %}<span class="badge badge-success">active</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="8" class="text-center text-muted">No versions yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-stream mr-1"></i> Latest predictions served (audit log)</h3></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-sm m-0 text-sm">
+            <thead><tr><th>When</th><th>Type</th><th>Object</th><th>Result</th><th>Model</th><th>User</th></tr></thead>
+            <tbody>
+            {% for l in recent_predictions %}
+            <tr><td>{{ l.created_at|date:"M d, H:i:s" }}</td><td>{{ l.get_kind_display }}</td><td>{{ l.object_ref }}</td>
+                <td>{% if l.outputs.risk_level %}<span class="badge badge-{{ l.outputs.risk_level|risk_badge }}">{% if l.outputs.state == 'overdue' %}Overdue{% else %}{{ l.outputs.risk_level }} {{ l.outputs.delay_probability|pct }}{% endif %}</span>{% if l.outputs.predicted_days %} ~{{ l.outputs.predicted_days }} d{% endif %}{% else %}-{% endif %}</td>
+                <td><code>{{ l.model_version }}</code></td><td>{{ l.user|default:"system" }}</td></tr>
+            {% empty %}<tr><td colspan="6" class="text-center text-muted">No predictions yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+{{ clf.feature_importances|json_script:"clf-fi" }}
+{{ reg.feature_importances|json_script:"reg-fi" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+$(function () {
+    var dark = $('body').hasClass('dark-mode');
+    Chart.defaults.global.defaultFontColor = dark ? '#ced4da' : '#495057';
+    function draw(canvasId, dataId, color) {
+        var el = document.getElementById(dataId), cv = document.getElementById(canvasId);
+        if (!el || !cv) return;
+        var fi = JSON.parse(el.textContent) || [];
+        fi = fi.slice(0, 10);
+        new Chart(cv, {
+            type: 'horizontalBar',
+            data: { labels: fi.map(function (f) { return f.feature; }),
+                    datasets: [{ data: fi.map(function (f) { return Math.round(f.importance * 1000) / 10; }), backgroundColor: color }] },
+            options: { maintainAspectRatio: false, legend: { display: false },
+                tooltips: { callbacks: { label: function (t) { return fi[t.index].description + ': ' + t.xLabel + '%'; } } },
+                scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (v) { return v + '%'; } },
+                                    gridLines: { color: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)' } }],
+                          yAxes: [{ gridLines: { display: false } }] } }
+        });
+    }
+    draw('clfImportance', 'clf-fi', 'rgba(220,53,69,.7)');
+    draw('regImportance', 'reg-fi', 'rgba(111,66,193,.7)');
+    $('#retrainForm').on('submit', function () {
+        $('#retrainBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Training&hellip; (about 10 s)');
+    });
+});
+</script>
+{% endblock %}

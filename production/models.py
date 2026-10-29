@@ -43,6 +43,9 @@ class ProductionTask(models.Model):
         super().__init__(*args, **kwargs)
         # Track the original quantity when the object is loaded from the database
         self._original_target = self.target_quantity if self.pk else 0
+        # Track the original due date so that progress can still be recorded on an
+        # overdue task (the past-date rule only applies to new or changed due dates).
+        self._original_due = self.due_date if self.pk else None
 
     def clean(self):
         super().clean()
@@ -52,7 +55,8 @@ class ProductionTask(models.Model):
         # 1. HR & DATE VALIDATION (Cross-field rules)[cite: 4]
         # ----------------------------------------------------
         if self.due_date:
-            if self.due_date < today and self.status != 'Completed':
+            due_date_changed = self.pk is None or self.due_date != self._original_due
+            if self.due_date < today and self.status != 'Completed' and due_date_changed:
                 raise ValidationError({'due_date': 'The due date cannot be in the past.'})
 
         if self.assigned_to:
@@ -121,8 +125,9 @@ class ProductionTask(models.Model):
                 bom.material.quantity_in_stock -= consumed
                 bom.material.save()
 
-        # Update the tracker for the next time this instance is edited
+        # Update the trackers for the next time this instance is edited
         self._original_target = self.target_quantity
+        self._original_due = self.due_date
 
     def delete(self, *args, **kwargs):
         # Refund all materials back to the warehouse if the task is deleted

@@ -48,6 +48,14 @@ def dashboard(request):
         'top_artisans': top_artisans,
     }
 
+    # AI & Analytics extension: extra widgets (charts, risk monitor, live orders).
+    # Wrapped defensively so the original dashboard always renders.
+    try:
+        from analytics.dashboard import dashboard_context
+        context.update(dashboard_context())
+    except Exception:
+        context['ai_enabled'] = False
+
     return render(request, 'dashboard.html', context)
 
 

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}What-if Predictor{% endblock %}
+
+{% block content %}
+<h3 class="mb-1"><i class="fas fa-brain text-purple mr-2"></i>What-if Predictor</h3>
+<p class="text-muted">Simulate a production job before committing to it: the AI forecasts the delay risk, the duration and the best artisan, and checks the warehouse.</p>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Job parameters</h3></div>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="card-body">
+                    {% for field in form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger text-sm">{{ field.errors|join:" " }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <button type="submit" name="action" value="predict" class="btn btn-primary btn-block"><i class="fas fa-magic"></i> Predict outcome</button>
+                    {% if request.user.is_staff %}
+                    <button type="submit" name="action" value="submit_order" class="btn btn-outline-success btn-block"
+                            title="Register this job as a new incoming order (it will appear in AI Insights)">
+                        <i class="fas fa-paper-plane"></i> Submit as incoming order
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card card-outline card-purple">
+            <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-area mr-1"></i> Prediction</h3></div>
+            <div class="card-body">
+                {% if result %}
+                    {% with p=result %}{% include 'analytics/_prediction_result.html' %}{% endwith %}
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-brain fa-3x mb-3 text-purple"></i>
+                    <p class="mb-1">Fill in the job parameters and click <b>Predict outcome</b>.</p>
+                    <p class="text-sm">Leave the artisan empty and the AI will rank every available artisan and pick the safest one.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

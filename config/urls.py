@@ -26,6 +26,8 @@ urlpatterns = [
     path('employees/', include('employees.urls')),
     path('production/', include('production.urls')),
     path('inventory/', include('inventory.urls')),
+    path('analytics/', include('analytics.urls')),   # AI & Analytics web pages
+    path('api/v1/', include('analytics.api.urls')),  # REST API (JSON)
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('', dashboard, name='dashboard'), # This maps the root URL to dashboard

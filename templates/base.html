@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- AI & Analytics extension styles -->
+    <link rel="stylesheet" href="{% static 'analytics/analytics.css' %}">
 
     <!-- EXTRA CSS BLOCK FOR CHILD TEMPLATES -->
     {% block extra_css %}{% endblock %}
@@ -43,6 +45,8 @@
                     <li><a href="{% url 'inventory:product_create' %}" class="dropdown-item">New Product (BOM)</a></li>
                     <li class="dropdown-divider"></li>
                     <li><a href="{% url 'employees:employee_create' %}" class="dropdown-item">Register Artisan</a></li>
+                    <li class="dropdown-divider"></li>
+                    <li><a href="{% url 'analytics:predictor' %}" class="dropdown-item"><i class="fas fa-brain text-purple mr-1"></i> AI What-if Prediction</a></li>
                 </ul>
             </li>
             {% endif %}
@@ -67,20 +71,29 @@
 
             <!-- Notifications Bell (System Alerts) -->
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
+                <a class="nav-link" data-toggle="dropdown" href="#" title="System Alerts">
                     <i class="far fa-bell"></i>
-                    <span class="badge badge-warning navbar-badge">!</span>
+                    {% if nav_alerts.total %}<span class="badge badge-danger navbar-badge">{{ nav_alerts.total }}</span>{% endif %}
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow">
-                    <span class="dropdown-item dropdown-header">System Alerts</span>
+                    <span class="dropdown-item dropdown-header">{{ nav_alerts.total|default:0 }} System Alert{{ nav_alerts.total|pluralize }}</span>
                     <div class="dropdown-divider"></div>
-                    <a href="{% url 'production:task_list' %}" class="dropdown-item">
-                        <i class="fas fa-tasks mr-2 text-danger"></i> Check Overdue Tasks
+                    <a href="{% url 'production:system_alerts' %}" class="dropdown-item">
+                        <i class="fas fa-tasks mr-2 text-danger"></i> Overdue Tasks
+                        <span class="float-right text-muted text-sm">{{ nav_alerts.overdue|default:0 }}</span>
                     </a>
                     <div class="dropdown-divider"></div>
-                    <a href="{% url 'inventory:material_list' %}" class="dropdown-item">
-                        <i class="fas fa-box-open mr-2 text-warning"></i> Check Low Stock
+                    <a href="{% url 'production:system_alerts' %}" class="dropdown-item">
+                        <i class="fas fa-box-open mr-2 text-warning"></i> Low Stock Materials
+                        <span class="float-right text-muted text-sm">{{ nav_alerts.low_stock|default:0 }}</span>
                     </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'analytics:insights' %}?risk=High" class="dropdown-item">
+                        <i class="fas fa-brain mr-2 text-purple"></i> High-Risk Incoming Orders
+                        <span class="float-right text-muted text-sm">{{ nav_alerts.high_risk_orders|default:0 }}</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'production:system_alerts' %}" class="dropdown-item dropdown-footer">Open Alerts Center</a>
                 </div>
             </li>
 
@@ -167,6 +180,40 @@
                             <p>Warehouse Stock</p>
                         </a>
                     </li>
+
+                    <li class="nav-header">AI &amp; ANALYTICS</li>
+                    <li class="nav-item">
+                        <a href="{% url 'analytics:insights' %}" class="nav-link">
+                            <i class="nav-icon fas fa-satellite-dish"></i>
+                            <p>AI Insights &amp; Orders
+                                {% if nav_alerts.high_risk_orders %}<span class="badge badge-danger right">{{ nav_alerts.high_risk_orders }}</span>{% endif %}
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'analytics:predictor' %}" class="nav-link">
+                            <i class="nav-icon fas fa-brain"></i>
+                            <p>What-if Predictor</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'analytics:model_center' %}" class="nav-link">
+                            <i class="nav-icon fas fa-microchip"></i>
+                            <p>Model Center</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'analytics:history' %}" class="nav-link">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>Production History</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'analytics:api_center' %}" class="nav-link">
+                            <i class="nav-icon fas fa-plug"></i>
+                            <p>API Center</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
@@ -202,7 +249,7 @@
 
     <footer class="main-footer text-sm">
         <div class="float-right d-none d-sm-inline">
-            Version 1.0.0
+            Version 2.0.0 &middot; AI Edition
         </div>
         <strong>&copy; 2026 <a href="#">Le Mieux Ltd</a>.</strong> Production Management System.
     </footer>
