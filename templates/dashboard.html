@@ -56,7 +56,7 @@
 
     <!-- Stat Box 3: Pending Tasks -->
     <div class="col-lg-3 col-6">
-        <div class="small-box bg-warning">
+        <div class="small-box bg-danger">
             <div class="inner">
                 <h3>{{ pending_tasks }}</h3>
                 <p>Pending Tasks</p>
@@ -89,7 +89,7 @@
 <div class="row">
     <div class="col-lg-3 col-sm-6">
         <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-teal elevation-1"><i class="fas fa-warehouse"></i></span>
+            <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-warehouse"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Inventory Value</span>
                 <span class="info-box-number">{{ inventory_value|rwf }} <small>RWF</small></span>
@@ -99,7 +99,7 @@
     </div>
     <div class="col-lg-3 col-sm-6">
         <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-stopwatch"></i></span>
+            <span class="info-box-icon bg-gradient-primary elevation-1"><i class="fas fa-stopwatch"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">On-time Rate</span>
                 <span class="info-box-number">{{ kpis.on_time_rate|default:"-" }}<small>%</small></span>
@@ -109,7 +109,7 @@
     </div>
     <div class="col-lg-3 col-sm-6">
         <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-exclamation-circle"></i></span>
+            <span class="info-box-icon bg-gradient-danger elevation-1"><i class="fas fa-exclamation-circle"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">High-Risk Open Tasks</span>
                 <span class="info-box-number">{{ at_risk_count|default:0 }} <small>of {{ risk_tasks|length }}</small></span>
@@ -119,7 +119,7 @@
     </div>
     <div class="col-lg-3 col-sm-6">
         <div class="info-box shadow-sm">
-            <span class="info-box-icon bg-purple elevation-1"><i class="fas fa-brain"></i></span>
+            <span class="info-box-icon bg-gradient-success elevation-1"><i class="fas fa-brain"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">AI Model Quality</span>
                 {% if model_classifier %}
@@ -238,7 +238,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header bg-dark text-white">
-                <h3 class="card-title"><i class="fas fa-shield-alt mr-1"></i> <b>Delay-Risk Monitor</b> &middot; open production tasks</h3>
+                <h3 class="card-title"> <b>Delay-Risk Monitor</b> &middot; open production tasks</h3>
                 <div class="card-tools">
                     <span class="badge badge-danger">{{ risk_counts.High }} High / overdue</span>
                     <span class="badge badge-warning">{{ risk_counts.Medium }} Medium</span>
@@ -288,7 +288,7 @@
     <!-- Task status + risk distribution -->
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> Task Status</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"><b> Task Status</b></h3></div>
             <div class="card-body"><div class="chart-box sm"><canvas id="statusChart"></canvas></div></div>
         </div>
     </div>
@@ -348,7 +348,7 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header bg-dark text-white">
-                <h3 class="card-title"><i class="fas fa-boxes mr-1"></i> Material Demand Forecast</h3>
+                <h3 class="card-title"> Material Demand Forecast</h3>
                 <div class="card-tools">{% if forecast_issues %}<span class="badge badge-warning">{{ forecast_issues }} at risk</span>{% endif %}</div>
             </div>
             <div class="card-body p-0">
@@ -376,13 +376,13 @@
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Production Output &amp; Delay Rate (12 months)</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> Production Output &amp; Delay Rate (12 months)</h3></div>
             <div class="card-body"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-chart-bar mr-1"></i> Delay Rate by Category</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> Delay Rate by Category</h3></div>
             <div class="card-body"><div class="chart-box"><canvas id="categoryChart"></canvas></div></div>
         </div>
     </div>

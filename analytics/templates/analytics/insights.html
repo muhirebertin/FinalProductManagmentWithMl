@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
-        <h3 class="mb-0"><i class="fas fa-satellite-dish text-purple mr-2"></i>AI Insights &amp; Incoming Orders</h3>
+        <h3 class="mb-0"> AI Insights &amp; Incoming Orders</h3>
         <p class="text-muted mb-0">Every order that arrives through the API is scored instantly by the AI engine.</p>
     </div>
     {% if request.user.is_staff %}
@@ -25,7 +25,7 @@
     <div class="col-6 col-md-3"><div class="small-box bg-info"><div class="inner"><h3>{{ counts.new }}</h3><p>New orders awaiting decision</p></div><div class="icon"><i class="fas fa-inbox"></i></div></div></div>
     <div class="col-6 col-md-3"><div class="small-box bg-danger"><div class="inner"><h3>{{ counts.high }}</h3><p>New orders at HIGH risk</p></div><div class="icon"><i class="fas fa-exclamation-triangle"></i></div></div></div>
     <div class="col-6 col-md-3"><div class="small-box bg-success"><div class="inner"><h3>{{ counts.converted }}</h3><p>Converted to production tasks</p></div><div class="icon"><i class="fas fa-check-double"></i></div></div></div>
-    <div class="col-6 col-md-3"><div class="small-box bg-secondary"><div class="inner"><h3>{{ counts.total }}</h3><p>Orders received in total</p></div><div class="icon"><i class="fas fa-database"></i></div></div></div>
+    <div class="col-6 col-md-3"><div class="small-box bg-warning"><div class="inner"><h3>{{ counts.total }}</h3><p>Orders received in total</p></div><div class="icon"><i class="fas fa-database"></i></div></div></div>
 </div>
 
 <!-- Orders -->
@@ -103,7 +103,7 @@
     <!-- Open task risk monitor -->
     <div class="col-lg-7" id="risk-monitor">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-shield-alt mr-1"></i> <b>Delay-Risk Monitor</b> &middot; all open tasks</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> <b>Delay-Risk Monitor</b> &middot; all open tasks</h3></div>
             <div class="card-body p-0">
                 {% if ai_error %}
                 <div class="p-3 text-muted">AI engine unavailable: {{ ai_error }}</div>
@@ -138,7 +138,7 @@
     <!-- Material forecast -->
     <div class="col-lg-5">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-boxes mr-1"></i> Material Demand Forecast</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> Material Demand Forecast</h3></div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                 <table class="table table-sm m-0">

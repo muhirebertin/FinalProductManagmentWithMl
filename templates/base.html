@@ -144,22 +144,22 @@
 
                     <li class="nav-item">
                         <a href="/" class="nav-link">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <i class="nav-icon fas fa-sliders-h"></i>
                             <p>Dashboard</p>
                         </a>
                     </li>
 
                     {% if request.user.is_staff %}
-                        <li class="nav-header">HUMAN RESOURCES</li>
+                        <li class="nav-header"><strong>HUMAN RESOURCES</strong></li>
                         <li class="nav-item">
                             <a href="{% url 'employees:employee_list' %}" class="nav-link">
-                                <i class="nav-icon fas fa-users"></i>
+                                <i class="nav-icon fas fa-user-friends"></i>
                                 <p>Artisans & Contracts</p>
                             </a>
                         </li>
                     {% endif %}
 
-                    <li class="nav-header">MANUFACTURING</li>
+                    <li class="nav-header"><strong>MANUFACTURING</strong></li>
                     <li class="nav-item">
                         <a href="{% url 'production:task_list' %}" class="nav-link">
                             <i class="nav-icon fas fa-clipboard-list"></i>
@@ -167,10 +167,10 @@
                         </a>
                     </li>
 
-                    <li class="nav-header">INVENTORY</li>
+                    <li class="nav-header"><strong>INVENTORY</strong></li>
                     <li class="nav-item">
                         <a href="{% url 'inventory:product_list' %}" class="nav-link">
-                            <i class="nav-icon fas fa-box"></i>
+                            <i class="nav-icon fas fa-boxes"></i>
                             <p>Products Catalog</p>
                         </a>
                     </li>
@@ -181,36 +181,36 @@
                         </a>
                     </li>
 
-                    <li class="nav-header">AI &amp; ANALYTICS</li>
+                    <li class="nav-header"><strong>AI &amp; ANALYTICS</strong></li>
                     <li class="nav-item">
                         <a href="{% url 'analytics:insights' %}" class="nav-link">
-                            <i class="nav-icon fas fa-satellite-dish"></i>
-                            <p>AI Insights &amp; Orders
+                            <i class="nav-icon fas fa-cubes"></i>
+                            <p> AI Insights &amp; Orders
                                 {% if nav_alerts.high_risk_orders %}<span class="badge badge-danger right">{{ nav_alerts.high_risk_orders }}</span>{% endif %}
                             </p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'analytics:predictor' %}" class="nav-link">
-                            <i class="nav-icon fas fa-brain"></i>
+                            <i class="nav-icon fas fa-cubes"></i>
                             <p>What-if Predictor</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'analytics:model_center' %}" class="nav-link">
-                            <i class="nav-icon fas fa-microchip"></i>
+                            <i class="nav-icon fas fa-cubes"></i>
                             <p>Model Center</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'analytics:history' %}" class="nav-link">
-                            <i class="nav-icon fas fa-history"></i>
+                            <i class="nav-icon fas fa-cubes"></i>
                             <p>Production History</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'analytics:api_center' %}" class="nav-link">
-                            <i class="nav-icon fas fa-plug"></i>
+                            <i class="nav-icon fas fa-cubes"></i>
                             <p>API Center</p>
                         </a>
                     </li>

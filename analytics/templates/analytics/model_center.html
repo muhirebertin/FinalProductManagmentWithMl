@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
-        <h3 class="mb-0"><i class="fas fa-microchip text-purple mr-2"></i>Model Center</h3>
+        <h3 class="mb-0"><strong>Model Center</strong></h3>
         <p class="text-muted mb-0">Trained models, their evaluation on unseen data, and the version registry.</p>
     </div>
     <div class="mt-2 mt-md-0">
@@ -39,7 +39,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header bg-dark text-white">
-                <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> <b>Delay-Risk Classifier</b></h3>
+                <h3 class="card-title"> <b>Delay-Risk Classifier</b></h3>
                 {% if clf %}<div class="card-tools"><span class="badge badge-light">v{{ clf.version }} &middot; {{ clf.algorithm }}</span></div>{% endif %}
             </div>
             <div class="card-body">
@@ -90,7 +90,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header bg-dark text-white">
-                <h3 class="card-title"><i class="fas fa-hourglass-half mr-1"></i> <b>Duration Regressor</b></h3>
+                <h3 class="card-title"> <b>Duration Regressor</b></h3>
                 {% if reg %}<div class="card-tools"><span class="badge badge-light">v{{ reg.version }} &middot; {{ reg.algorithm }}</span></div>{% endif %}
             </div>
             <div class="card-body">
@@ -125,7 +125,7 @@
 <div class="row">
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-database mr-1"></i> Training data</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> Training data</h3></div>
             <div class="card-body p-0">
                 <table class="table table-sm m-0">
                     <tr><td>Synthetic history (generated)</td><td class="text-right font-weight-bold">{{ sources|get_item:"synthetic"|default:0 }}</td></tr>
@@ -142,7 +142,7 @@
     </div>
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-code-branch mr-1"></i> Version registry</h3></div>
+            <div class="card-header bg-dark text-white"><h3 class="card-title"> Version registry</h3></div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 290px; overflow-y: auto;">
                 <table class="table table-sm table-hover m-0 text-sm">
@@ -167,7 +167,7 @@
 </div>
 
 <div class="card">
-    <div class="card-header bg-dark text-white"><h3 class="card-title"><i class="fas fa-stream mr-1"></i> Latest predictions served (audit log)</h3></div>
+    <div class="card-header bg-dark text-white"><h3 class="card-title"> Latest predictions served (audit log)</h3></div>
     <div class="card-body p-0">
         <div class="table-responsive">
         <table class="table table-sm m-0 text-sm">
