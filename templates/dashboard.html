@@ -6,7 +6,6 @@
 {% if alert_count > 0 %}
 <div class="row mb-3">
     <div class="col-12">
-        <!-- The 'pulse' animation CSS makes it blink -->
         <a href="{% url 'production:system_alerts' %}" class="btn btn-danger btn-block shadow-sm" style="animation: pulse 2s infinite;">
             <i class="fas fa-exclamation-triangle"></i> You have {{ alert_count }} active system warnings. Click here to view the Alerts Center.
         </a>
